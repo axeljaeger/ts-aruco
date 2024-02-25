@@ -20,7 +20,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 */
 
-import { svdcmp } from "./svd";
+import { svdcmp } from './svd';
 
 /*
 References:
@@ -369,8 +369,8 @@ Vec3.prototype.minIndex = function () {
 
 var Mat3 = function () {
   this.m = [[0.0, 0.0, 0.0],
-  [0.0, 0.0, 0.0],
-  [0.0, 0.0, 0.0]];
+    [0.0, 0.0, 0.0],
+    [0.0, 0.0, 0.0]];
 };
 
 Mat3.clone = function (a) {

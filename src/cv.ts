@@ -100,7 +100,7 @@ export const adaptiveThreshold = (imageSrc: ImageData, kernelSize: number, thres
   return imageDst;
 };
 
-export const otsu = (imageSrc: ImageData) => {
+export const otsu = (imageSrc: ImageData): number => {
   const src = imageSrc.data;
   const len = src.length;
   const hist: number[] = [];
@@ -110,7 +110,6 @@ export const otsu = (imageSrc: ImageData) => {
   let wB = 0;
   let wF = 0;
   let max = 0;
-  let between: number;
 
   for (let i = 0; i < 256; ++i) {
     hist[i] = 0;
@@ -135,8 +134,7 @@ export const otsu = (imageSrc: ImageData) => {
       sumB += hist[i] * i;
 
       const mu = (sumB / wB) - ((sum - sumB) / wF);
-
-      between = wB * wF * mu * mu;
+      const between = wB * wF * mu * mu;
 
       if (between > max) {
         max = between;
@@ -155,16 +153,11 @@ const stackBoxBlurShift =
   [0, 9, 10, 11, 9, 12, 10, 11, 12, 9, 13, 13, 10, 9, 13, 13];
 
 class BlurStack {
-  color: number;
-  next: BlurStack | null;
-
-  constructor () {
-    this.color = 0;
-    this.next = null;
-  }
+  color: number = 0;
+  next: BlurStack | null = null;
 };
 
-export const stackBoxBlur = (imageSrc: ImageData, imageDst: ImageData, kernelSize: number) => {
+export const stackBoxBlur = (imageSrc: ImageData, imageDst: ImageData, kernelSize: number): ImageData => {
   const src = imageSrc.data;
   const dst = imageDst.data;
   const height = imageSrc.height;
@@ -176,7 +169,7 @@ export const stackBoxBlur = (imageSrc: ImageData, imageDst: ImageData, kernelSiz
   const mult = stackBoxBlurMult[kernelSize];
   const shift = stackBoxBlurShift[kernelSize];
   let stack: BlurStack | null;
-  let stackStart: any;
+  let stackStart: BlurStack | null;
   let color: number;
   let sum: number;
   let pos: number;
@@ -259,22 +252,27 @@ export const stackBoxBlur = (imageSrc: ImageData, imageDst: ImageData, kernelSiz
   return imageDst;
 };
 
-export const findContours = (imageSrc: ImageData, binary: any): CVContour[] => {
-  const width = imageSrc.width; const height = imageSrc.height; const contours: CVContour[] = [];
-  let src: number[]; let deltas: any; let pos: number; let pix: number; let nbd: number; let outer: boolean; let hole: boolean; let i: number; let j: number;
+export const findContours = (imageSrc: ImageData, binary: number[]): CVContour[] => {
+  const width = imageSrc.width;
+  const height = imageSrc.height;
+  const contours: CVContour[] = [];
+  let pix: number;
 
-  src = binaryBorder(imageSrc, binary);
+  const src = binaryBorder(imageSrc, binary);
 
-  deltas = neighborhoodDeltas(width + 2);
+  const deltas = neighborhoodDeltas(width + 2);
 
-  pos = width + 3;
-  nbd = 1;
+  let pos = width + 3;
+  let nbd = 1;
 
-  for (i = 0; i < height; ++i, pos += 2) {
-    for (j = 0; j < width; ++j, ++pos) {
+  for (let i = 0; i < height; ++i, pos += 2) {
+    for (let j = 0; j < width; ++j, ++pos) {
       pix = src[pos];
 
       if (pix !== 0) {
+        let outer: boolean;
+        let hole: boolean;
+
         outer = hole = false;
 
         if (pix === 1 && src[pos - 1] === 0) {
@@ -295,12 +293,17 @@ export const findContours = (imageSrc: ImageData, binary: any): CVContour[] => {
   return contours;
 };
 
-const borderFollowing = (src: Record<string, any>, pos: string | number, nbd: number, point: { x: any, y: any }, hole: boolean, deltas: any[]): CVContour => {
+const borderFollowing = (src: number[], pos: number, nbd: number, point: CVPoint, hole: boolean, deltas: number[]): CVContour => {
   const contour: CVContour = {
     hole: false,
     points: [],
     tooNear: false
-  }; let pos1: string | number; let pos3: string | number; let pos4: string | number; let s: number; let s_end: number;
+  };
+  let pos1: number;
+  let pos3: number;
+  let pos4: number;
+  let s: number;
+  let s_end: number;
 
   contour.hole = hole;
 
@@ -354,36 +357,43 @@ const borderFollowing = (src: Record<string, any>, pos: string | number, nbd: nu
 const neighborhood =
   [[1, 0], [1, -1], [0, -1], [-1, -1], [-1, 0], [-1, 1], [0, 1], [1, 1]];
 
-const neighborhoodDeltas = (width: number) => {
-  const deltas: number[] = []; const len = neighborhood.length; let i = 0;
+const neighborhoodDeltas = (width: number): number[] => {
+  const deltas: number[] = [];
+  const len = neighborhood.length;
 
-  for (; i < len; ++i) {
+  for (let i = 0; i < len; ++i) {
     deltas[i] = neighborhood[i][0] + (neighborhood[i][1] * width);
   }
 
   return deltas.concat(deltas);
 };
 
-export const approxPolyDP = (contour: CVPoint[], epsilon: number) => {
-  let slice = { start_index: 0, end_index: 0 };
-  const right_slice = { start_index: 0, end_index: 0 };
-  const poly: CVPoint[] = []; const stack: CVSlice[] = []; const len = contour.length;
-  let pt: { x: number, y: number }; let start_pt: { x: number, y: number }; let end_pt: { x: number, y: number }; let dist: number; let max_dist: number; let le_eps: boolean;
-  let dx: number; let dy: number; let i: number; let j: number; let k: number;
+export const approxPolyDP = (contour: CVPoint[], epsilon: number): CVPoint[] => {
+  let slice: CVSlice = { start_index: 0, end_index: 0 };
+  const right_slice: CVSlice = { start_index: 0, end_index: 0 };
+  const poly: CVPoint[] = [];
+  const stack: CVSlice[] = [];
+  const len = contour.length;
+  let start_pt: CVPoint;
+  let end_pt: CVPoint;
+  let dist: number; let max_dist: number; let le_eps: boolean;
+
+  let dx: number;
+  let dy: number; let k: number;
 
   epsilon *= epsilon;
 
   k = 0;
 
-  for (i = 0; i < 3; ++i) {
+  for (let i = 0; i < 3; ++i) {
     max_dist = 0;
 
     k = (k + right_slice.start_index) % len;
     start_pt = contour[k];
     if (++k === len) { k = 0; }
 
-    for (j = 1; j < len; ++j) {
-      pt = contour[k];
+    for (let j = 1; j < len; ++j) {
+      const pt = contour[k];
       if (++k === len) { k = 0; }
 
       dx = pt.x - start_pt.x;
@@ -428,8 +438,8 @@ export const approxPolyDP = (contour: CVPoint[], epsilon: number) => {
       dx = end_pt.x - start_pt.x;
       dy = end_pt.y - start_pt.y;
 
-      for (i = slice.start_index + 1; i < slice.end_index; ++i) {
-        pt = contour[k];
+      for (let i = slice.start_index + 1; i < slice.end_index; ++i) {
+        const pt = contour[k];
         if (++k === len) { k = 0; }
 
         dist = Math.abs((pt.y - start_pt.y) * dx - (pt.x - start_pt.x) * dy);
@@ -463,16 +473,16 @@ export const warp = (imageSrc: ImageData, contour: CVContour, warpSize: number):
   const width = imageSrc.width; const height = imageSrc.height;
 
   let pos = 0;
-  let sx1: number; let sx2: any; let dx1: number; let dx2: number; let sy1: number; let sy2: number; let dy1: number; let dy2: number; let p1: number; let p2: number; let p3: number; let p4: number;
-  let m: any[]; let r: any; let s: any; let t: any; let u: number; let v: number; let w: number; let x: number; let y: number; let i: number; let j: number;
+  let p1: number; let p2: number; let p3: number; let p4: number;
+  let r: number; let s: number; let t: number; let u: number; let v: number; let w: number;
 
-  m = getPerspectiveTransform(contour, warpSize - 1);
+  const m = getPerspectiveTransform(contour, warpSize - 1);
 
   r = m[8];
   s = m[2];
   t = m[5];
 
-  for (i = 0; i < warpSize; ++i) {
+  for (let i = 0; i < warpSize; ++i) {
     r += m[7];
     s += m[1];
     t += m[4];
@@ -481,23 +491,23 @@ export const warp = (imageSrc: ImageData, contour: CVContour, warpSize: number):
     v = s;
     w = t;
 
-    for (j = 0; j < warpSize; ++j) {
+    for (let j = 0; j < warpSize; ++j) {
       u += m[6];
       v += m[0];
       w += m[3];
 
-      x = v / u;
-      y = w / u;
+      const x = v / u;
+      const y = w / u;
 
-      sx1 = x >>> 0;
-      sx2 = (sx1 === width - 1) ? sx1 : sx1 + 1;
-      dx1 = x - sx1;
-      dx2 = 1.0 - dx1;
+      const sx1 = x >>> 0;
+      const sx2 = (sx1 === width - 1) ? sx1 : sx1 + 1;
+      const dx1 = x - sx1;
+      const dx2 = 1.0 - dx1;
 
-      sy1 = y >>> 0;
-      sy2 = (sy1 === height - 1) ? sy1 : sy1 + 1;
-      dy1 = y - sy1;
-      dy2 = 1.0 - dy1;
+      const sy1 = y >>> 0;
+      const sy2 = (sy1 === height - 1) ? sy1 : sy1 + 1;
+      const dy1 = y - sy1;
+      const dy2 = 1.0 - dy1;
 
       p1 = p2 = sy1 * width;
       p3 = p4 = sy2 * width;
@@ -511,7 +521,7 @@ export const warp = (imageSrc: ImageData, contour: CVContour, warpSize: number):
   return imageDst;
 };
 
-const getPerspectiveTransform = (src: CVContour, size: number) => {
+const getPerspectiveTransform = (src: CVContour, size: number): number[] => {
   const rq = square2quad(src);
 
   rq[0] /= size;
@@ -525,12 +535,11 @@ const getPerspectiveTransform = (src: CVContour, size: number) => {
 };
 
 const square2quad = (srcC: CVContour): number[] => {
-  const sq: number[] = []; let px: number; let py: number; let dx1: number; let dx2: number; let dy1: number; let dy2: number; let den: number;
-
+  const sq: number[] = [];
   const src = srcC.points;
 
-  px = src[0].x - src[1].x + src[2].x - src[3].x;
-  py = src[0].y - src[1].y + src[2].y - src[3].y;
+  const px = src[0].x - src[1].x + src[2].x - src[3].x;
+  const py = src[0].y - src[1].y + src[2].y - src[3].y;
 
   if (px === 0 && py === 0) {
     sq[0] = src[1].x - src[0].x;
@@ -543,11 +552,11 @@ const square2quad = (srcC: CVContour): number[] => {
     sq[7] = 0;
     sq[8] = 1;
   } else {
-    dx1 = src[1].x - src[2].x;
-    dx2 = src[3].x - src[2].x;
-    dy1 = src[1].y - src[2].y;
-    dy2 = src[3].y - src[2].y;
-    den = dx1 * dy2 - dx2 * dy1;
+    const dx1 = src[1].x - src[2].x;
+    const dx2 = src[3].x - src[2].x;
+    const dy1 = src[1].y - src[2].y;
+    const dy2 = src[3].y - src[2].y;
+    const den = dx1 * dy2 - dx2 * dy1;
 
     sq[6] = (px * dy2 - dx2 * py) / den;
     sq[7] = (dx1 * py - px * dy1) / den;
@@ -563,10 +572,14 @@ const square2quad = (srcC: CVContour): number[] => {
   return sq;
 };
 
-export const isContourConvex = (contour: CVPoint[]) => {
+export const isContourConvex = (contour: CVPoint[]): boolean => {
   let orientation = 0; let convex = true;
-  const len = contour.length; let i = 0; let j = 0;
-  let cur_pt: { x: number, y: number }; let prev_pt: { x: number, y: number }; let dxdy0: number; let dydx0: number; let dx0: number; let dy0: number; let dx: number; let dy: number;
+  const len = contour.length;
+  let j = 0;
+  let cur_pt: CVPoint;
+  let prev_pt: CVPoint;
+  let dx0: number;
+  let dy0: number;
 
   prev_pt = contour[len - 1];
   cur_pt = contour[0];
@@ -574,16 +587,16 @@ export const isContourConvex = (contour: CVPoint[]) => {
   dx0 = cur_pt.x - prev_pt.x;
   dy0 = cur_pt.y - prev_pt.y;
 
-  for (; i < len; ++i) {
+  for (let i = 0; i < len; ++i) {
     if (++j === len) { j = 0; }
 
     prev_pt = cur_pt;
     cur_pt = contour[j];
 
-    dx = cur_pt.x - prev_pt.x;
-    dy = cur_pt.y - prev_pt.y;
-    dxdy0 = dx * dy0;
-    dydx0 = dy * dx0;
+    const dx = cur_pt.x - prev_pt.x;
+    const dy = cur_pt.y - prev_pt.y;
+    const dxdy0 = dx * dy0;
+    const dydx0 = dy * dx0;
 
     orientation |= dydx0 > dxdy0 ? 1 : (dydx0 < dxdy0 ? 2 : 3);
 
@@ -600,12 +613,13 @@ export const isContourConvex = (contour: CVPoint[]) => {
 };
 
 export const perimeter = (poly: CVContour): number => {
-  const len = poly.points.length; let i = 0; let j = len - 1;
-  let p = 0.0; let dx: number; let dy: number;
+  const len = poly.points.length;
+  let j = len - 1;
+  let p = 0.0;
 
-  for (; i < len; j = i++) {
-    dx = poly.points[i].x - poly.points[j].x;
-    dy = poly.points[i].y - poly.points[j].y;
+  for (let i = 0; i < len; j = i++) {
+    const dx = poly.points[i].x - poly.points[j].x;
+    const dy = poly.points[i].y - poly.points[j].y;
 
     p += Math.sqrt(dx * dx + dy * dy);
   }
@@ -613,15 +627,16 @@ export const perimeter = (poly: CVContour): number => {
   return p;
 };
 
-export const minEdgeLength = (poly: string | any[]) => {
-  const len = poly.length; let i = 0; let j = len - 1;
-  let min = Infinity; let d: number; let dx: number; let dy: number;
+export const minEdgeLength = (poly: CVPoint[]): number => {
+  const len = poly.length;
+  let j = len - 1;
+  let min = Infinity;
 
-  for (; i < len; j = i++) {
-    dx = poly[i].x - poly[j].x;
-    dy = poly[i].y - poly[j].y;
+  for (let i = 0; i < len; j = i++) {
+    const dx = poly[i].x - poly[j].x;
+    const dy = poly[i].y - poly[j].y;
 
-    d = dx * dx + dy * dy;
+    const d = dx * dx + dy * dy;
 
     if (d < min) {
       min = d;
@@ -631,14 +646,16 @@ export const minEdgeLength = (poly: string | any[]) => {
   return Math.sqrt(min);
 };
 
-export const countNonZero = (imageSrc: ImageData, square: { height: any, width: any, x: number, y: number }) => {
-  const src = imageSrc.data; const height = square.height; const width = square.width;
-  let pos = square.x + (square.y * imageSrc.width);
+export const countNonZero = (imageSrc: ImageData, square: { height: any, width: any, x: number, y: number }): number => {
+  const src = imageSrc.data;
+  const height = square.height;
+  const width = square.width;
   const span = imageSrc.width - width;
-  let nz = 0; let i: number; let j: number;
+  let pos = square.x + (square.y * imageSrc.width);
+  let nz = 0;
 
-  for (i = 0; i < height; ++i) {
-    for (j = 0; j < width; ++j) {
+  for (let i = 0; i < height; ++i) {
+    for (let j = 0; j < width; ++j) {
       if (src[pos++] !== 0) {
         ++nz;
       }
@@ -650,25 +667,29 @@ export const countNonZero = (imageSrc: ImageData, square: { height: any, width: 
   return nz;
 };
 
-const binaryBorder = (imageSrc: { data: any, height: any, width: any }, dst: number[]) => {
-  const src = imageSrc.data; const height = imageSrc.height; const width = imageSrc.width;
-  let posSrc = 0; let posDst = 0; let i: number; let j: number;
+const binaryBorder = (imageSrc: ImageData, dst: number[]): number[] => {
+  const src = imageSrc.data;
+  const height = imageSrc.height;
+  const width = imageSrc.width;
 
-  for (j = -2; j < width; ++j) {
+  let posSrc = 0;
+  let posDst = 0;
+
+  for (let j = -2; j < width; ++j) {
     dst[posDst++] = 0;
   }
 
-  for (i = 0; i < height; ++i) {
+  for (let i = 0; i < height; ++i) {
     dst[posDst++] = 0;
 
-    for (j = 0; j < width; ++j) {
+    for (let j = 0; j < width; ++j) {
       dst[posDst++] = (src[posSrc++] === 0 ? 0 : 1);
     }
 
     dst[posDst++] = 0;
   }
 
-  for (j = -2; j < width; ++j) {
+  for (let j = -2; j < width; ++j) {
     dst[posDst++] = 0;
   }
 

@@ -33,18 +33,12 @@ export class Marker {
 }
 
 export class Detector {
-  binary: any[];
-  contours: CVContour[];
-  polys: CVContour[];
-  candidates: CVContour[];
+  binary: number[] = [];
+  contours: CVContour[] = [];
+  polys: CVContour[] = [];
+  candidates: CVContour[] = [];
   grey: ImageData | null = null;
   thres: ImageData | null = null;
-  constructor () {
-    this.binary = [];
-    this.contours = [];
-    this.polys = [];
-    this.candidates = [];
-  };
 
   detect (image: ImageData): Marker[] {
     this.grey = grayscale(image);
@@ -158,7 +152,7 @@ export class Detector {
       const threshhold = threshold(warped, otsu(warped));
 
       const marker = this.getMarker(threshhold, candidate);
-      if (marker) {
+      if (marker !== null) {
         markers.push(marker);
       }
     }
@@ -169,13 +163,16 @@ export class Detector {
   getMarker (imageSrc: ImageData, candidate: CVContour): Marker | null {
     const width = (imageSrc.width / 7) >>> 0;
     const minZero = (width * width) >> 1;
-    const bits: any[] = []; const rotations: any[] = []; const distances: any[] = [];
-    let square; let pair; let inc; let i; let j;
+    const bits: number[][] = [];
+    const rotations: number[][][] = [];
+    const distances: number[] = [];
+    let square;
+    let inc;
 
-    for (i = 0; i < 7; ++i) {
+    for (let i = 0; i < 7; ++i) {
       inc = (i === 0 || i === 6) ? 1 : 6;
 
-      for (j = 0; j < 7; j += inc) {
+      for (let j = 0; j < 7; j += inc) {
         square = { x: j * width, y: i * width, width, height: width };
         if (countNonZero(imageSrc, square) > minZero) {
           return null;
@@ -183,10 +180,10 @@ export class Detector {
       }
     }
 
-    for (i = 0; i < 5; ++i) {
+    for (let i = 0; i < 5; ++i) {
       bits[i] = [];
 
-      for (j = 0; j < 5; ++j) {
+      for (let j = 0; j < 5; ++j) {
         square = { x: (j + 1) * width, y: (i + 1) * width, width, height: width };
 
         bits[i][j] = countNonZero(imageSrc, square) > minZero ? 1 : 0;
@@ -196,9 +193,9 @@ export class Detector {
     rotations[0] = bits;
     distances[0] = this.hammingDistance(rotations[0]);
 
-    pair = { first: distances[0], second: 0 };
+    const pair = { first: distances[0], second: 0 };
 
-    for (i = 1; i < 4; ++i) {
+    for (let i = 1; i < 4; ++i) {
       rotations[i] = this.rotate(rotations[i - 1]);
       distances[i] = this.hammingDistance(rotations[i]);
 
@@ -217,15 +214,15 @@ export class Detector {
       this.rotate2(candidate, 4 - pair.second));
   };
 
-  hammingDistance (bits: number[][]) {
+  hammingDistance (bits: number[][]): number {
     const ids = [[1, 0, 0, 0, 0], [1, 0, 1, 1, 1], [0, 1, 0, 0, 1], [0, 1, 1, 1, 0]];
-    let dist = 0; let sum; let minSum;
+    let dist = 0;
 
     for (let i = 0; i < 5; ++i) {
-      minSum = Infinity;
+      let minSum = Infinity;
 
       for (let j = 0; j < 4; ++j) {
-        sum = 0;
+        let sum = 0;
 
         for (let k = 0; k < 5; ++k) {
           sum += bits[i][k] === ids[j][k] ? 0 : 1;
@@ -255,8 +252,9 @@ export class Detector {
     return id;
   }
 
-  rotate (src: any[]) {
-    const dst: any = []; const len = src.length;
+  rotate (src: number[][]): number[][] {
+    const dst: number[][] = [];
+    const len = src.length;
 
     for (let i = 0; i < len; ++i) {
       dst[i] = [];
@@ -273,9 +271,10 @@ export class Detector {
       points: [],
       hole: false,
       tooNear: false
-    }; const len = src.points.length; let i;
+    };
+    const len = src.points.length;
 
-    for (i = 0; i < len; ++i) {
+    for (let i = 0; i < len; ++i) {
       dst.points[i] = src.points[(rotation + i) % len];
     }
     return dst;
