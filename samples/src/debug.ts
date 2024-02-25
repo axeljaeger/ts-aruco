@@ -1,5 +1,5 @@
-import { Detector } from '../../src/aruco.ts';
-import { CVContour, CVImage, otsu, threshold, warp } from '../../src/cv.ts';
+import { Detector, type Marker } from '../../src/aruco.ts';
+import { type CVContour, otsu, threshold, warp } from '../../src/cv.ts';
 
 let camera: HTMLVideoElement;
 let canvas: HTMLCanvasElement;
@@ -9,12 +9,12 @@ let detector: Detector;
 
 let debugImage: ImageData;
 let warpImage: ImageData;
-let homographyImage: any;
+let homographyImage: ImageData;
 
-export function onLoad() {
-  camera = document.getElementById("video") as HTMLVideoElement;
-  canvas = document.getElementById("canvas") as HTMLCanvasElement;
-  context = canvas!.getContext("2d")!;
+export const onLoad = (): void => {
+  camera = document.getElementById('video') as HTMLVideoElement;
+  canvas = document.getElementById('canvas') as HTMLCanvasElement;
+  context = canvas!.getContext('2d')!;
 
   camera.width = 320;
   camera.height = 240;
@@ -28,7 +28,7 @@ export function onLoad() {
       camera.srcObject = stream;
     })
     .catch(function (err) {
-      console.log(err.name + ": " + err.message);
+      console.log(err.name + ': ' + err.message);
     }
     );
 
@@ -37,47 +37,46 @@ export function onLoad() {
 
   debugImage = context.createImageData(camera.width, camera.height);
   warpImage = context.createImageData(49, 49);
-  homographyImage = new CVImage();
 
   requestAnimationFrame(tick);
-}
+};
 
-function tick() {
+const tick = (): void => {
   requestAnimationFrame(tick);
 
   if (camera.readyState === camera.HAVE_ENOUGH_DATA) {
     snapshot();
 
-    var markers = detector.detect(imageData as any as CVImage);
+    const markers = detector.detect(imageData);
     drawDebug();
     drawCorners(markers);
     drawId(markers);
   }
-}
+};
 
-function snapshot() {
+const snapshot = (): void => {
   context.drawImage(camera, 0, 0, camera.width, camera.height);
   imageData = context.getImageData(0, 0, camera.width, camera.height);
-}
+};
 
-function drawDebug() {
-  var width = camera.width, height = camera.height;
+const drawDebug = (): void => {
+  const width = camera.width; const height = camera.height;
 
   context.clearRect(0, 0, canvas.width, canvas.height);
 
   context.putImageData(imageData, 0, 0);
-  context.putImageData(createImage(detector.grey, debugImage), width, 0);
-  context.putImageData(createImage(detector.thres, debugImage), width * 2, 0);
+  context.putImageData(createImage(detector.grey!, debugImage), width, 0);
+  context.putImageData(createImage(detector.thres!, debugImage), width * 2, 0);
 
-  drawContours(detector.contours, 0, height, function (hole: any) { return hole ? "magenta" : "blue"; });
-  drawContours(detector.polys, width, height, function () { return "green"; });
-  drawContours(detector.candidates, width * 2, height, function () { return "red"; });
+  drawContours(detector.contours, 0, height, function (hole: any) { return hole ? 'magenta' : 'blue'; });
+  drawContours(detector.polys, width, height, function () { return 'green'; });
+  drawContours(detector.candidates, width * 2, height, function () { return 'red'; });
 
-  drawWarps(detector.grey, detector.candidates, height * 2 + 20);
-}
+  drawWarps(detector.grey!, detector.candidates, height * 2 + 20);
+};
 
-function drawContours(contours: CVContour[], x: number, y: number, fn: any) {
-  var i = contours.length, j, contour, point;
+const drawContours = (contours: CVContour[], x: number, y: number, fn: any): void => {
+  let i = contours.length; let j; let contour; let point;
 
   while (i--) {
     contour = contours[i];
@@ -95,36 +94,35 @@ function drawContours(contours: CVContour[], x: number, y: number, fn: any) {
     context.stroke();
     context.closePath();
   }
-}
+};
 
-function drawWarps(imageSrc: any, contours: any, y: number) {
-  var i = contours.length, contour;
+const drawWarps = (imageSrc: ImageData, contours: CVContour[], y: number): void => {
+  let i = contours.length;
+  let contour;
 
-  var offset = (canvas.width - ((warpImage.width + 10) * contours.length)) / 2
+  const offset = (canvas.width - ((warpImage.width + 10) * contours.length)) / 2;
   while (i--) {
     contour = contours[i];
 
-    warp(imageSrc, homographyImage, contour, warpImage.width);
+    homographyImage = warp(imageSrc, contour, warpImage.width);
     context.putImageData(createImage(homographyImage, warpImage), offset + i * (warpImage.width + 10), y);
 
-    threshold(homographyImage, homographyImage, otsu(homographyImage));
+    homographyImage = threshold(homographyImage, otsu(homographyImage));
     context.putImageData(createImage(homographyImage, warpImage), offset + i * (warpImage.width + 10), y + 60);
   }
-}
+};
 
-function drawCorners(markers: any) {
-  var corners, corner, i, j;
-
+const drawCorners = (markers: Marker[]): void => {
   context.lineWidth = 3;
 
-  for (i = 0; i !== markers.length; ++i) {
-    corners = markers[i].corners;
+  for (let i = 0; i !== markers.length; ++i) {
+    const corners = markers[i].corners.points;
 
-    context.strokeStyle = "red";
+    context.strokeStyle = 'red';
     context.beginPath();
 
-    for (j = 0; j !== corners.length; ++j) {
-      corner = corners[j];
+    for (let j = 0; j !== corners.length; ++j) {
+      let corner = corners[j];
       context.moveTo(corner.x, corner.y);
       corner = corners[(j + 1) % corners.length];
       context.lineTo(corner.x, corner.y);
@@ -133,36 +131,33 @@ function drawCorners(markers: any) {
     context.stroke();
     context.closePath();
 
-    context.strokeStyle = "green";
+    context.strokeStyle = 'green';
     context.strokeRect(corners[0].x - 2, corners[0].y - 2, 4, 4);
   }
-}
+};
 
-function drawId(markers: any) {
-  var corners, corner, x, y, i, j;
-
-  context.strokeStyle = "blue";
+const drawId = (markers: Marker[]): void => {
+  context.strokeStyle = 'blue';
   context.lineWidth = 1;
 
-  for (i = 0; i !== markers.length; ++i) {
-    corners = markers[i].corners;
+  for (let i = 0; i !== markers.length; ++i) {
+    const corners = markers[i].corners.points;
 
-    x = Infinity;
-    y = Infinity;
+    let x = Infinity;
+    let y = Infinity;
 
-    for (j = 0; j !== corners.length; ++j) {
-      corner = corners[j];
-
+    for (let j = 0; j !== corners.length; ++j) {
+      const corner = corners[j];
       x = Math.min(x, corner.x);
       y = Math.min(y, corner.y);
     }
 
-    context.strokeText(markers[i].id, x, y)
+    context.strokeText(`${markers[i].id}`, x, y);
   }
-}
+};
 
-function createImage(src: any, dst: any) {
-  var i = src.data.length, j = (i * 4) + 3;
+const createImage = (src: ImageData, dst: ImageData): ImageData => {
+  let i = src.data.length; let j = (i * 4) + 3;
 
   while (i--) {
     dst.data[j -= 4] = 255;
@@ -171,6 +166,5 @@ function createImage(src: any, dst: any) {
 
   return dst;
 };
-
 
 window.onload = onLoad;

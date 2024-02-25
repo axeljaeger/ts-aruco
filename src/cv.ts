@@ -28,34 +28,25 @@ References:
   http://incubator.quasimondo.com/processing/fast_blur_deluxe.php
 */
 
-export class CVImage {
-  width: number;
-  height: number;
-  data: any[];
-  constructor(width?: number, height?: number, data?: any[]) {
-    this.width = width || 0;
-    this.height = height || 0;
-    this.data = data || [];
-  }
-}
-
 interface CVSlice {
-  start_index: number;
-  end_index: number;
+  start_index: number
+  end_index: number
 };
 
 export interface CVPoint {
-  x: number;
-  y: number;
+  x: number
+  y: number
 };
 
 export interface CVContour {
-  points: CVPoint[];
-  hole: boolean;
+  points: CVPoint[]
+  hole: boolean
+  tooNear: boolean
 }
 
+export const grayscale = (imageSrc: ImageData): ImageData => {
+  const imageDst = new ImageData(imageSrc.width, imageSrc.height);
 
-export const grayscale = (imageSrc: CVImage, imageDst: CVImage) => {
   const src = imageSrc.data;
   const dst = imageDst.data;
   const len = src.length;
@@ -66,17 +57,16 @@ export const grayscale = (imageSrc: CVImage, imageDst: CVImage) => {
       (src[i] * 0.299 + src[i + 1] * 0.587 + src[i + 2] * 0.114 + 0.5) & 0xff;
   }
 
-  imageDst.width = imageSrc.width;
-  imageDst.height = imageSrc.height;
-
   return imageDst;
 };
 
-export const threshold = (imageSrc: CVImage, imageDst: CVImage, threshold: number) => {
+export const threshold = (imageSrc: ImageData, threshold: number): ImageData => {
   const src = imageSrc.data;
+  const imageDst = new ImageData(imageSrc.width, imageSrc.height);
+
   const dst = imageDst.data;
   const len = src.length;
-  let tab: number[] = [];
+  const tab: number[] = [];
 
   for (let i = 0; i < 256; ++i) {
     tab[i] = i <= threshold ? 0 : 255;
@@ -86,17 +76,16 @@ export const threshold = (imageSrc: CVImage, imageDst: CVImage, threshold: numbe
     dst[i] = tab[src[i]];
   }
 
-  imageDst.width = imageSrc.width;
-  imageDst.height = imageSrc.height;
-
   return imageDst;
 };
 
-export const adaptiveThreshold = (imageSrc: CVImage, imageDst: CVImage, kernelSize: number, threshold: number) => {
+export const adaptiveThreshold = (imageSrc: ImageData, kernelSize: number, threshold: number): ImageData => {
   const src = imageSrc.data;
+  const imageDst = new ImageData(imageSrc.width, imageSrc.height);
+
   const dst = imageDst.data;
   const len = src.length;
-  let tab: number[] = [];
+  const tab: number[] = [];
 
   stackBoxBlur(imageSrc, imageDst, kernelSize);
 
@@ -108,23 +97,19 @@ export const adaptiveThreshold = (imageSrc: CVImage, imageDst: CVImage, kernelSi
     dst[i] = tab[src[i] - dst[i] + 255];
   }
 
-  imageDst.width = imageSrc.width;
-  imageDst.height = imageSrc.height;
-
   return imageDst;
 };
 
-export const otsu = (imageSrc: CVImage) => {
+export const otsu = (imageSrc: ImageData) => {
   const src = imageSrc.data;
   const len = src.length;
-  let hist: number[] = [];
+  const hist: number[] = [];
   let threshold = 0;
   let sum = 0;
   let sumB = 0;
   let wB = 0;
   let wF = 0;
   let max = 0;
-  let mu: number;
   let between: number;
 
   for (let i = 0; i < 256; ++i) {
@@ -141,16 +126,15 @@ export const otsu = (imageSrc: CVImage) => {
 
   for (let i = 0; i < 256; ++i) {
     wB += hist[i];
-    if (0 !== wB) {
-
+    if (wB !== 0) {
       wF = len - wB;
-      if (0 === wF) {
+      if (wF === 0) {
         break;
       }
 
       sumB += hist[i] * i;
 
-      mu = (sumB / wB) - ((sum - sumB) / wF);
+      const mu = (sumB / wB) - ((sum - sumB) / wF);
 
       between = wB * wF * mu * mu;
 
@@ -174,13 +158,13 @@ class BlurStack {
   color: number;
   next: BlurStack | null;
 
-  constructor() {
+  constructor () {
     this.color = 0;
     this.next = null;
   }
 };
 
-export const stackBoxBlur = (imageSrc: CVImage, imageDst: CVImage, kernelSize: number) => {
+export const stackBoxBlur = (imageSrc: ImageData, imageDst: ImageData, kernelSize: number) => {
   const src = imageSrc.data;
   const dst = imageDst.data;
   const height = imageSrc.height;
@@ -275,9 +259,9 @@ export const stackBoxBlur = (imageSrc: CVImage, imageDst: CVImage, kernelSize: n
   return imageDst;
 };
 
-export const findContours = (imageSrc: CVImage, binary: any): CVContour[] => {
-  var width = imageSrc.width, height = imageSrc.height, contours: CVContour[] = [],
-    src: number[], deltas: any, pos: number, pix: number, nbd: number, outer: boolean, hole: boolean, i: number, j: number;
+export const findContours = (imageSrc: ImageData, binary: any): CVContour[] => {
+  const width = imageSrc.width; const height = imageSrc.height; const contours: CVContour[] = [];
+  let src: number[]; let deltas: any; let pos: number; let pix: number; let nbd: number; let outer: boolean; let hole: boolean; let i: number; let j: number;
 
   src = binaryBorder(imageSrc, binary);
 
@@ -287,17 +271,15 @@ export const findContours = (imageSrc: CVImage, binary: any): CVContour[] => {
   nbd = 1;
 
   for (i = 0; i < height; ++i, pos += 2) {
-
     for (j = 0; j < width; ++j, ++pos) {
       pix = src[pos];
 
-      if (0 !== pix) {
+      if (pix !== 0) {
         outer = hole = false;
 
-        if (1 === pix && 0 === src[pos - 1]) {
+        if (pix === 1 && src[pos - 1] === 0) {
           outer = true;
-        }
-        else if (pix >= 1 && 0 === src[pos + 1]) {
+        } else if (pix >= 1 && src[pos + 1] === 0) {
           hole = true;
         }
 
@@ -313,8 +295,12 @@ export const findContours = (imageSrc: CVImage, binary: any): CVContour[] => {
   return contours;
 };
 
-const borderFollowing = (src: { [x: string]: any; }, pos: string | number, nbd: number, point: { x: any; y: any; }, hole: boolean, deltas: any[]): CVContour => {
-  var contour: CVContour = { hole: false, points: [] }, pos1: string | number, pos3: string | number, pos4: string | number, s: number, s_end: number;
+const borderFollowing = (src: Record<string, any>, pos: string | number, nbd: number, point: { x: any, y: any }, hole: boolean, deltas: any[]): CVContour => {
+  const contour: CVContour = {
+    hole: false,
+    points: [],
+    tooNear: false
+  }; let pos1: string | number; let pos3: string | number; let pos4: string | number; let s: number; let s_end: number;
 
   contour.hole = hole;
 
@@ -330,7 +316,6 @@ const borderFollowing = (src: { [x: string]: any; }, pos: string | number, nbd: 
   if (s === s_end) {
     src[pos] = -nbd;
     contour.points.push({ x: point.x, y: point.y });
-
   } else {
     pos3 = pos;
 
@@ -345,13 +330,11 @@ const borderFollowing = (src: { [x: string]: any; }, pos: string | number, nbd: 
 
       if (((s - 1) >>> 0) < (s_end >>> 0)) {
         src[pos3] = -nbd;
-      }
-      else if (src[pos3] === 1) {
+      } else if (src[pos3] === 1) {
         src[pos3] = nbd;
       }
 
       contour.points.push({ x: point.x, y: point.y });
-
 
       point.x += neighborhood[s][0];
       point.y += neighborhood[s][1];
@@ -372,7 +355,7 @@ const neighborhood =
   [[1, 0], [1, -1], [0, -1], [-1, -1], [-1, 0], [-1, 1], [0, 1], [1, 1]];
 
 const neighborhoodDeltas = (width: number) => {
-  var deltas: number[] = [], len = neighborhood.length, i = 0;
+  const deltas: number[] = []; const len = neighborhood.length; let i = 0;
 
   for (; i < len; ++i) {
     deltas[i] = neighborhood[i][0] + (neighborhood[i][1] * width);
@@ -382,11 +365,11 @@ const neighborhoodDeltas = (width: number) => {
 };
 
 export const approxPolyDP = (contour: CVPoint[], epsilon: number) => {
-  var slice = { start_index: 0, end_index: 0 },
-    right_slice = { start_index: 0, end_index: 0 },
-    poly: CVPoint[] = [], stack: CVSlice[] = [], len = contour.length,
-    pt: { x: number; y: number; }, start_pt: { x: number; y: number; }, end_pt: { x: number; y: number; }, dist: number, max_dist: number, le_eps: boolean,
-    dx: number, dy: number, i: number, j: number, k: number;
+  let slice = { start_index: 0, end_index: 0 };
+  const right_slice = { start_index: 0, end_index: 0 };
+  const poly: CVPoint[] = []; const stack: CVSlice[] = []; const len = contour.length;
+  let pt: { x: number, y: number }; let start_pt: { x: number, y: number }; let end_pt: { x: number, y: number }; let dist: number; let max_dist: number; let le_eps: boolean;
+  let dx: number; let dy: number; let i: number; let j: number; let k: number;
 
   epsilon *= epsilon;
 
@@ -416,7 +399,6 @@ export const approxPolyDP = (contour: CVPoint[], epsilon: number) => {
 
   if (max_dist! <= epsilon) {
     poly.push({ x: start_pt!.x, y: start_pt!.y });
-
   } else {
     slice.start_index = k;
     slice.end_index = (right_slice.start_index += slice.start_index);
@@ -440,7 +422,6 @@ export const approxPolyDP = (contour: CVPoint[], epsilon: number) => {
 
     if (slice.end_index <= slice.start_index + 1) {
       le_eps = true;
-
     } else {
       max_dist = 0;
 
@@ -464,7 +445,6 @@ export const approxPolyDP = (contour: CVPoint[], epsilon: number) => {
 
     if (le_eps) {
       poly.push({ x: start_pt.x, y: start_pt.y });
-
     } else {
       right_slice.end_index = slice.end_index;
       slice.end_index = right_slice.start_index;
@@ -477,12 +457,14 @@ export const approxPolyDP = (contour: CVPoint[], epsilon: number) => {
   return poly;
 };
 
-export const warp = (imageSrc: { data: any; width: any; height: any; }, imageDst: { data: any; width: any; height: any; }, contour: any, warpSize: number) => {
-  var src = imageSrc.data, dst = imageDst.data,
-    width = imageSrc.width, height = imageSrc.height,
-    pos = 0,
-    sx1: number, sx2: any, dx1: number, dx2: number, sy1: number, sy2: number, dy1: number, dy2: number, p1: number, p2: number, p3: number, p4: number,
-    m: any[], r: any, s: any, t: any, u: number, v: number, w: number, x: number, y: number, i: number, j: number;
+export const warp = (imageSrc: ImageData, contour: CVContour, warpSize: number): ImageData => {
+  const imageDst = new ImageData(warpSize, warpSize);
+  const src = imageSrc.data; const dst = imageDst.data;
+  const width = imageSrc.width; const height = imageSrc.height;
+
+  let pos = 0;
+  let sx1: number; let sx2: any; let dx1: number; let dx2: number; let sy1: number; let sy2: number; let dy1: number; let dy2: number; let p1: number; let p2: number; let p3: number; let p4: number;
+  let m: any[]; let r: any; let s: any; let t: any; let u: number; let v: number; let w: number; let x: number; let y: number; let i: number; let j: number;
 
   m = getPerspectiveTransform(contour, warpSize - 1);
 
@@ -523,18 +505,14 @@ export const warp = (imageSrc: { data: any; width: any; height: any; }, imageDst
       dst[pos++] =
         (dy2 * (dx2 * src[p1 + sx1] + dx1 * src[p2 + sx2]) +
           dy1 * (dx2 * src[p3 + sx1] + dx1 * src[p4 + sx2])) & 0xff;
-
     }
   }
-
-  imageDst.width = warpSize;
-  imageDst.height = warpSize;
 
   return imageDst;
 };
 
-const getPerspectiveTransform = (src: any, size: number) => {
-  var rq = square2quad(src);
+const getPerspectiveTransform = (src: CVContour, size: number) => {
+  const rq = square2quad(src);
 
   rq[0] /= size;
   rq[1] /= size;
@@ -546,13 +524,15 @@ const getPerspectiveTransform = (src: any, size: number) => {
   return rq;
 };
 
-const square2quad = (src: { x: number; y: number; }[]): number[] => {
-  var sq: number[] = [], px: number, py: number, dx1: number, dx2: number, dy1: number, dy2: number, den: number;
+const square2quad = (srcC: CVContour): number[] => {
+  const sq: number[] = []; let px: number; let py: number; let dx1: number; let dx2: number; let dy1: number; let dy2: number; let den: number;
+
+  const src = srcC.points;
 
   px = src[0].x - src[1].x + src[2].x - src[3].x;
   py = src[0].y - src[1].y + src[2].y - src[3].y;
 
-  if (0 === px && 0 === py) {
+  if (px === 0 && py === 0) {
     sq[0] = src[1].x - src[0].x;
     sq[1] = src[2].x - src[1].x;
     sq[2] = src[0].x;
@@ -562,7 +542,6 @@ const square2quad = (src: { x: number; y: number; }[]): number[] => {
     sq[6] = 0;
     sq[7] = 0;
     sq[8] = 1;
-
   } else {
     dx1 = src[1].x - src[2].x;
     dx2 = src[3].x - src[2].x;
@@ -585,9 +564,9 @@ const square2quad = (src: { x: number; y: number; }[]): number[] => {
 };
 
 export const isContourConvex = (contour: CVPoint[]) => {
-  var orientation = 0, convex = true,
-    len = contour.length, i = 0, j = 0,
-    cur_pt: { x: number; y: number; }, prev_pt: { x: number; y: number; }, dxdy0: number, dydx0: number, dx0: number, dy0: number, dx: number, dy: number;
+  let orientation = 0; let convex = true;
+  const len = contour.length; let i = 0; let j = 0;
+  let cur_pt: { x: number, y: number }; let prev_pt: { x: number, y: number }; let dxdy0: number; let dydx0: number; let dx0: number; let dy0: number; let dx: number; let dy: number;
 
   prev_pt = contour[len - 1];
   cur_pt = contour[0];
@@ -608,7 +587,7 @@ export const isContourConvex = (contour: CVPoint[]) => {
 
     orientation |= dydx0 > dxdy0 ? 1 : (dydx0 < dxdy0 ? 2 : 3);
 
-    if (3 === orientation) {
+    if (orientation === 3) {
       convex = false;
       break;
     }
@@ -620,13 +599,13 @@ export const isContourConvex = (contour: CVPoint[]) => {
   return convex;
 };
 
-export const perimeter = (poly: string | any[]) => {
-  var len = poly.length, i = 0, j = len - 1,
-    p = 0.0, dx: number, dy: number;
+export const perimeter = (poly: CVContour): number => {
+  const len = poly.points.length; let i = 0; let j = len - 1;
+  let p = 0.0; let dx: number; let dy: number;
 
   for (; i < len; j = i++) {
-    dx = poly[i].x - poly[j].x;
-    dy = poly[i].y - poly[j].y;
+    dx = poly.points[i].x - poly.points[j].x;
+    dy = poly.points[i].y - poly.points[j].y;
 
     p += Math.sqrt(dx * dx + dy * dy);
   }
@@ -635,8 +614,8 @@ export const perimeter = (poly: string | any[]) => {
 };
 
 export const minEdgeLength = (poly: string | any[]) => {
-  var len = poly.length, i = 0, j = len - 1,
-    min = Infinity, d: number, dx: number, dy: number;
+  const len = poly.length; let i = 0; let j = len - 1;
+  let min = Infinity; let d: number; let dx: number; let dy: number;
 
   for (; i < len; j = i++) {
     dx = poly[i].x - poly[j].x;
@@ -652,17 +631,15 @@ export const minEdgeLength = (poly: string | any[]) => {
   return Math.sqrt(min);
 };
 
-export const countNonZero = (imageSrc: CVImage, square: { height: any; width: any; x: number; y: number; }) => {
-  var src = imageSrc.data, height = square.height, width = square.width,
-    pos = square.x + (square.y * imageSrc.width),
-    span = imageSrc.width - width,
-    nz = 0, i: number, j: number;
+export const countNonZero = (imageSrc: ImageData, square: { height: any, width: any, x: number, y: number }) => {
+  const src = imageSrc.data; const height = square.height; const width = square.width;
+  let pos = square.x + (square.y * imageSrc.width);
+  const span = imageSrc.width - width;
+  let nz = 0; let i: number; let j: number;
 
   for (i = 0; i < height; ++i) {
-
     for (j = 0; j < width; ++j) {
-
-      if (0 !== src[pos++]) {
+      if (src[pos++] !== 0) {
         ++nz;
       }
     }
@@ -673,9 +650,9 @@ export const countNonZero = (imageSrc: CVImage, square: { height: any; width: an
   return nz;
 };
 
-const binaryBorder = (imageSrc: { data: any; height: any; width: any; }, dst: number[]) => {
-  var src = imageSrc.data, height = imageSrc.height, width = imageSrc.width,
-    posSrc = 0, posDst = 0, i: number, j: number;
+const binaryBorder = (imageSrc: { data: any, height: any, width: any }, dst: number[]) => {
+  const src = imageSrc.data; const height = imageSrc.height; const width = imageSrc.width;
+  let posSrc = 0; let posDst = 0; let i: number; let j: number;
 
   for (j = -2; j < width; ++j) {
     dst[posDst++] = 0;
@@ -685,7 +662,7 @@ const binaryBorder = (imageSrc: { data: any; height: any; width: any; }, dst: nu
     dst[posDst++] = 0;
 
     for (j = 0; j < width; ++j) {
-      dst[posDst++] = (0 === src[posSrc++] ? 0 : 1);
+      dst[posDst++] = (src[posSrc++] === 0 ? 0 : 1);
     }
 
     dst[posDst++] = 0;

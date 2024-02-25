@@ -1,5 +1,4 @@
-import { Detector } from '../../src/aruco.ts';
-import { CVImage } from '../../src/cv.ts';
+import { Detector, type Marker } from '../../src/aruco.ts';
 
 let video: HTMLVideoElement;
 let canvas: HTMLCanvasElement;
@@ -7,10 +6,10 @@ let context: CanvasRenderingContext2D;
 let imageData: ImageData;
 let detector: Detector;
 
-function onLoad() {
-  video = document.getElementById("video")! as HTMLVideoElement;
-  canvas = document.getElementById("canvas")! as HTMLCanvasElement;
-  context = canvas.getContext("2d")!;
+const onLoad = (): void => {
+  video = document.getElementById('video')! as HTMLVideoElement;
+  canvas = document.getElementById('canvas')! as HTMLCanvasElement;
+  context = canvas.getContext('2d')!;
 
   canvas.width = parseInt(canvas.style.width);
   canvas.height = parseInt(canvas.style.height);
@@ -21,40 +20,40 @@ function onLoad() {
       video.srcObject = stream;
     })
     .catch(function (err) {
-      console.log(err.name + ": " + err.message);
+      console.log(err.name + ': ' + err.message);
     }
     );
 
   detector = new Detector();
 
   requestAnimationFrame(tick);
-}
+};
 
-function tick() {
+const tick = (): void => {
   requestAnimationFrame(tick);
 
   if (video.readyState === video.HAVE_ENOUGH_DATA) {
     snapshot();
-    var markers = detector.detect(imageData as any as CVImage);
+    const markers = detector.detect(imageData);
     drawCorners(markers);
     drawId(markers);
   }
-}
+};
 
-function snapshot() {
+const snapshot = (): void => {
   context.drawImage(video, 0, 0, canvas.width, canvas.height);
   imageData = context.getImageData(0, 0, canvas.width, canvas.height);
-}
+};
 
-function drawCorners(markers: any[]) {
-  var corners, corner, i, j;
+const drawCorners = (markers: Marker[]): void => {
+  let corners, corner, i, j;
 
   context.lineWidth = 3;
 
   for (i = 0; i !== markers.length; ++i) {
-    corners = markers[i].corners;
+    corners = markers[i].corners.points;
 
-    context.strokeStyle = "red";
+    context.strokeStyle = 'red';
     context.beginPath();
 
     for (j = 0; j !== corners.length; ++j) {
@@ -67,19 +66,19 @@ function drawCorners(markers: any[]) {
     context.stroke();
     context.closePath();
 
-    context.strokeStyle = "green";
+    context.strokeStyle = 'green';
     context.strokeRect(corners[0].x - 2, corners[0].y - 2, 4, 4);
   }
-}
+};
 
-function drawId(markers: any[]) {
-  var corners, corner, x, y, i, j;
+const drawId = (markers: Marker[]): void => {
+  let corners, corner, x, y, i, j;
 
-  context.strokeStyle = "blue";
+  context.strokeStyle = 'blue';
   context.lineWidth = 1;
 
   for (i = 0; i !== markers.length; ++i) {
-    corners = markers[i].corners;
+    corners = markers[i].corners.points;
 
     x = Infinity;
     y = Infinity;
@@ -91,8 +90,8 @@ function drawId(markers: any[]) {
       y = Math.min(y, corner.y);
     }
 
-    context.strokeText(markers[i].id, x, y)
+    context.strokeText(`${markers[i].id}`, x, y);
   }
-}
+};
 
 window.onload = onLoad;

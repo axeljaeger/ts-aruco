@@ -20,8 +20,8 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 */
 
-import { CVPoint } from "./cv";
-import { SVD } from "./svd";
+import { type CVPoint } from './cv';
+import { svdcmp } from './svd';
 
 /*
 References:
@@ -30,7 +30,6 @@ References:
   http://www.cfar.umd.edu/~daniel/daniel_papersfordownload/CoplanarPts.pdf
 */
 
-
 class Pose {
   bestError: any;
   bestRotation: any;
@@ -38,7 +37,6 @@ class Pose {
   alternativeError: any;
   alternativeRotation: any;
   alternativeTranslation: any;
-
 
   constructor(error1, rotation1, translation1, error2, rotation2, translation2) {
     this.bestError = error1;
@@ -57,7 +55,6 @@ export class Posit {
   objectNormal: any[];
   objectMatrix: any[][];
 
-
   constructor(modelSize, focalLength) {
     this.objectPoints = this.buildModel(modelSize);
     this.focalLength = focalLength;
@@ -70,7 +67,7 @@ export class Posit {
   };
 
   buildModel(modelSize) {
-    var half = modelSize / 2.0;
+    const half = modelSize / 2.0;
 
     return [
       [-half, half, 0.0],
@@ -80,8 +77,8 @@ export class Posit {
   }
 
   init() {
-    let np = this.objectPoints.length,
-      vectors: any[] = [], n: any[] = [], len = 0.0, row = 2;
+    const np = this.objectPoints.length;
+    const vectors: any[] = []; const n: any[] = []; let len = 0.0; let row = 2;
 
     for (let i = 0; i < np; ++i) {
       this.objectVectors[i] = [this.objectPoints[i][0] - this.objectPoints[0][0],
@@ -93,7 +90,7 @@ export class Posit {
       this.objectVectors[i][2]];
     }
 
-    while (0.0 === len) {
+    while (len === 0.0) {
       n[0] = this.objectVectors[1][1] * this.objectVectors[row][2] -
         this.objectVectors[1][2] * this.objectVectors[row][1];
       n[1] = this.objectVectors[1][2] * this.objectVectors[row][0] -
@@ -114,9 +111,9 @@ export class Posit {
   }
 
   pose(imagePoints) {
-    var posRotation1 = [[], [], []], posRotation2 = [[], [], []], posTranslation = [],
-      rotation1 = [[], [], []], rotation2 = [[], [], []], translation1: any[] = [], translation2: any[] = [],
-      error1, error2, valid1, valid2, i, j;
+    const posRotation1 = [[], [], []]; const posRotation2 = [[], [], []]; const posTranslation = [];
+    const rotation1 = [[], [], []]; const rotation2 = [[], [], []]; const translation1: any[] = []; const translation2: any[] = [];
+    let error1; let error2; let valid1; let valid2; let i; let j;
 
     this.pos(imagePoints, posRotation1, posRotation2, posTranslation);
 
@@ -145,22 +142,22 @@ export class Posit {
       }
     }
 
-    return error1.euclidean < error2.euclidean ?
-      new Pose(error1.pixels, rotation1, translation1, error2.pixels, rotation2, translation2) :
-      new Pose(error2.pixels, rotation2, translation2, error1.pixels, rotation1, translation1);
+    return error1.euclidean < error2.euclidean
+      ? new Pose(error1.pixels, rotation1, translation1, error2.pixels, rotation2, translation2)
+      : new Pose(error2.pixels, rotation2, translation2, error1.pixels, rotation1, translation1);
   };
 
   pos(imagePoints, rotation1, rotation2, translation) {
-    var np = this.objectPoints.length, imageVectors: any[] = [],
-      i0: number[] = [], j0: number[] = [], ivec: number[] = [], jvec: number[] = [], row1: number[] = [], row2: number[] = [], row3: number[] = [],
-      i0i0, j0j0, i0j0, delta, q, lambda, mu, scale, i, j;
+    const np = this.objectPoints.length; const imageVectors: any[] = [];
+    const i0: number[] = []; const j0: number[] = []; const ivec: number[] = []; const jvec: number[] = []; const row1: number[] = []; const row2: number[] = []; const row3: number[] = [];
+    let i0i0; let j0j0; let i0j0; let delta; let q; let lambda; let mu; let scale; let i; let j;
 
     for (i = 0; i < np; ++i) {
       imageVectors[i] = [imagePoints[i].x - imagePoints[0].x,
       imagePoints[i].y - imagePoints[0].y];
     }
 
-    //i0 and j0
+    // i0 and j0
     for (i = 0; i < 3; ++i) {
       i0[i] = 0.0;
       j0[i] = 0.0;
@@ -174,7 +171,7 @@ export class Posit {
     j0j0 = j0[0] * j0[0] + j0[1] * j0[1] + j0[2] * j0[2];
     i0j0 = i0[0] * j0[0] + i0[1] * j0[1] + i0[2] * j0[2];
 
-    //Lambda and mu
+    // Lambda and mu
     delta = (j0j0 - i0i0) * (j0j0 - i0i0) + 4.0 * (i0j0 * i0j0);
 
     if (j0j0 - i0i0 >= 0.0) {
@@ -185,21 +182,21 @@ export class Posit {
 
     if (q >= 0.0) {
       lambda = Math.sqrt(q);
-      if (0.0 === lambda) {
+      if (lambda === 0.0) {
         mu = 0.0;
       } else {
         mu = -i0j0 / lambda;
       }
     } else {
       lambda = Math.sqrt(-(i0j0 * i0j0) / q);
-      if (0.0 === lambda) {
+      if (lambda === 0.0) {
         mu = Math.sqrt(i0i0 - j0j0);
       } else {
         mu = -i0j0 / lambda;
       }
     }
 
-    //First rotation
+    // First rotation
     for (i = 0; i < 3; ++i) {
       ivec[i] = i0[i] + lambda * this.objectNormal[i];
       jvec[i] = j0[i] + mu * this.objectNormal[i];
@@ -222,7 +219,7 @@ export class Posit {
       rotation1[2][i] = row3[i];
     }
 
-    //Second rotation
+    // Second rotation
     for (i = 0; i < 3; ++i) {
       ivec[i] = i0[i] - lambda * this.objectNormal[i];
       jvec[i] = j0[i] - mu * this.objectNormal[i];
@@ -243,14 +240,14 @@ export class Posit {
       rotation2[2][i] = row3[i];
     }
 
-    //Translation
+    // Translation
     translation[0] = imagePoints[0].x / scale;
     translation[1] = imagePoints[0].y / scale;
     translation[2] = this.focalLength / scale;
   }
 
   isValid(rotation, translation) {
-    var np = this.objectPoints.length, zmin = Infinity, i = 0, zi;
+    const np = this.objectPoints.length; let zmin = Infinity; let i = 0; let zi;
 
     for (; i < np; ++i) {
       zi = translation[2] +
@@ -266,13 +263,13 @@ export class Posit {
   }
 
   iterate(imagePoints, posRotation, posTranslation, rotation, translation) {
-    var np = this.objectPoints.length,
-      oldSopImagePoints: CVPoint[] = [], sopImagePoints: CVPoint[] = [],
-      rotation1 = [[], [], []], rotation2 = [[], [], []],
-      translation1: number[] = [], translation2: number[] = [],
-      converged = false, iteration = 0,
-      oldImageDifference, imageDifference, factor,
-      error, error1, error2, delta, i, j;
+    const np = this.objectPoints.length;
+    const oldSopImagePoints: CVPoint[] = []; const sopImagePoints: CVPoint[] = [];
+    const rotation1 = [[], [], []]; const rotation2 = [[], [], []];
+    const translation1: number[] = []; const translation2: number[] = [];
+    let converged = false; let iteration = 0;
+    let oldImageDifference; let imageDifference; let factor;
+    let error; let error1; let error2; let delta; let i; let j;
 
     for (i = 0; i < np; ++i) {
       oldSopImagePoints[i] = {
@@ -315,11 +312,10 @@ export class Posit {
 
     error = error1 = this.error(imagePoints, rotation, translation1);
 
-    //Convergence
-    converged = (0.0 === error1.pixels) || (imageDifference < 0.01);
+    // Convergence
+    converged = (error1.pixels === 0.0) || (imageDifference < 0.01);
 
     while (iteration++ < 100 && !converged) {
-
       for (i = 0; i < np; ++i) {
         oldSopImagePoints[i].x = sopImagePoints[i].x;
         oldSopImagePoints[i].y = sopImagePoints[i].y;
@@ -397,17 +393,17 @@ export class Posit {
 
       delta = Math.abs(imageDifference - oldImageDifference);
 
-      converged = (0.0 === error.pixels) || (delta < 0.01);
+      converged = (error.pixels === 0.0) || (delta < 0.01);
     }
 
     return error;
   }
 
   error(imagePoints, rotation, translation) {
-    var np = this.objectPoints.length,
-      move: number[][] = [], projection: number[][] = [], errorvec: number[][] = [],
-      euclidean = 0.0, pixels = 0.0, maximum = 0.0,
-      i, j, k;
+    const np = this.objectPoints.length;
+    const move: number[][] = []; const projection: number[][] = []; const errorvec: number[][] = [];
+    let euclidean = 0.0; let pixels = 0.0; let maximum = 0.0;
+    let i; let j; let k;
 
     if (!this.isValid(rotation, translation)) {
       return { euclidean: -1.0, pixels: -1, maximum: -1.0 };
@@ -455,15 +451,15 @@ export class Posit {
       }
     }
 
-    return { euclidean: euclidean / np, pixels: pixels, maximum: maximum };
+    return { euclidean: euclidean / np, pixels, maximum };
   }
 
   pseudoInverse(a, n, b) {
-    var w: number[] = [], v = [[], [], []], s: number[][] = [[], [], []],
-      wmax = 0.0, cn = 0,
-      i, j, k;
+    const w: number[] = []; const v = [[], [], []]; const s: number[][] = [[], [], []];
+    let wmax = 0.0; let cn = 0;
+    let i; let j; let k;
 
-    SVD.svdcmp(a, n, 3, w, v);
+    svdcmp(a, n, 3, w, v);
 
     for (i = 0; i < 3; ++i) {
       if (w[i] > wmax) {
@@ -480,7 +476,7 @@ export class Posit {
     }
 
     for (j = 0; j < 3; ++j) {
-      if (0.0 === w[j]) {
+      if (w[j] === 0.0) {
         ++cn;
         for (k = j; k < 2; ++k) {
           for (i = 0; i < n; ++i) {
@@ -494,7 +490,7 @@ export class Posit {
     }
 
     for (j = 0; j < 2; ++j) {
-      if (0.0 === w[j]) {
+      if (w[j] === 0.0) {
         w[j] = w[j + 1];
       }
     }
@@ -514,5 +510,4 @@ export class Posit {
       }
     }
   }
-
 }

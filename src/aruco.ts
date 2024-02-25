@@ -26,35 +26,29 @@ References:
   http://www.uco.es/investiga/grupos/ava/node/26
 */
 
-import { CVContour, CVImage, adaptiveThreshold, approxPolyDP, countNonZero, findContours, grayscale, isContourConvex, minEdgeLength, otsu, perimeter, threshold, warp } from './cv';
+import { type CVContour, adaptiveThreshold, approxPolyDP, countNonZero, findContours, grayscale, isContourConvex, minEdgeLength, otsu, perimeter, threshold, warp } from './cv';
 
 export class Marker {
-  constructor(public id: number, public corners: any) { }
+  constructor (public id: number, public corners: CVContour) { }
 }
 
 export class Detector {
-
-  homography: any;
   binary: any[];
   contours: CVContour[];
   polys: CVContour[];
-  candidates: any[];
-  constructor() {
-    this.grey = new CVImage();
-    this.thres = new CVImage();
-    this.homography = new CVImage();
+  candidates: CVContour[];
+  grey: ImageData | null = null;
+  thres: ImageData | null = null;
+  constructor () {
     this.binary = [];
     this.contours = [];
     this.polys = [];
     this.candidates = [];
   };
 
-  grey: CVImage
-  thres: CVImage;
-
-  detect(image: CVImage) {
-    grayscale(image, this.grey);
-    adaptiveThreshold(this.grey, this.thres, 2, 7);
+  detect (image: ImageData): Marker[] {
+    this.grey = grayscale(image);
+    this.thres = adaptiveThreshold(this.grey, 2, 7);
 
     this.contours = findContours(this.thres, this.binary);
 
@@ -65,8 +59,11 @@ export class Detector {
     return this.findMarkers(this.grey, this.candidates, 49);
   }
 
-  findCandidates(contours: CVContour[], minSize: number, epsilon: number, minLength: number) {
-    let candidates: any[] = [], len = contours.length, contour, poly;
+  findCandidates (contours: CVContour[], minSize: number, epsilon: number, minLength: number): CVContour[] {
+    const candidates: CVContour[] = [];
+
+    const len = contours.length;
+    let contour;
 
     this.polys = [];
 
@@ -74,14 +71,21 @@ export class Detector {
       contour = contours[i];
 
       if (contour.points.length >= minSize) {
-        poly = approxPolyDP(contour.points, contour.points.length * epsilon);
+        const poly = approxPolyDP(contour.points, contour.points.length * epsilon);
 
-        this.polys.push({ points: poly, hole: false });
+        this.polys.push({
+          points: poly,
+          hole: false,
+          tooNear: false
+        });
 
-        if ((4 === poly.length) && (isContourConvex(poly))) {
-
+        if ((poly.length === 4) && (isContourConvex(poly))) {
           if (minEdgeLength(poly) >= minLength) {
-            candidates.push(poly);
+            candidates.push({
+              points: poly,
+              hole: false,
+              tooNear: false
+            });
           }
         }
       }
@@ -90,42 +94,41 @@ export class Detector {
     return candidates;
   };
 
-  clockwiseCorners(candidates: any[][]) {
-    var len = candidates.length, dx1, dx2, dy1, dy2, swap, i;
+  clockwiseCorners (candidates: CVContour[]): CVContour[] {
+    const len = candidates.length;
 
-    for (i = 0; i < len; ++i) {
-      dx1 = candidates[i][1].x - candidates[i][0].x;
-      dy1 = candidates[i][1].y - candidates[i][0].y;
-      dx2 = candidates[i][2].x - candidates[i][0].x;
-      dy2 = candidates[i][2].y - candidates[i][0].y;
+    for (let i = 0; i < len; ++i) {
+      const candidatePoints = candidates[i].points;
+      const dx1 = candidatePoints[1]?.x - candidatePoints[0].x;
+      const dy1 = candidatePoints[1]?.y - candidatePoints[0].y;
+      const dx2 = candidatePoints[2]?.x - candidatePoints[0].x;
+      const dy2 = candidatePoints[2]?.y - candidatePoints[0].y;
 
       if ((dx1 * dy2 - dy1 * dx2) < 0) {
-        swap = candidates[i][1];
-        candidates[i][1] = candidates[i][3];
-        candidates[i][3] = swap;
+        const swap = candidatePoints[1];
+        candidatePoints[1] = candidatePoints[3];
+        candidatePoints[3] = swap;
       }
     }
 
     return candidates;
   };
 
-  notTooNear(candidates: any, minDist: number) {
-    var notTooNear: any[] = [], len = candidates.length, dist, dx, dy, i, j, k;
+  notTooNear (candidates: CVContour[], minDist: number): CVContour[] {
+    const notTooNear: CVContour[] = [];
+    const len = candidates.length;
+    for (let i = 0; i < len; ++i) {
+      for (let j = i + 1; j < len; ++j) {
+        let dist = 0;
 
-    for (i = 0; i < len; ++i) {
-
-      for (j = i + 1; j < len; ++j) {
-        dist = 0;
-
-        for (k = 0; k < 4; ++k) {
-          dx = candidates[i][k].x - candidates[j][k].x;
-          dy = candidates[i][k].y - candidates[j][k].y;
+        for (let k = 0; k < 4; ++k) {
+          const dx = candidates[i].points[k].x - candidates[j].points[k].x;
+          const dy = candidates[i].points[k].y - candidates[j].points[k].y;
 
           dist += dx * dx + dy * dy;
         }
 
         if ((dist / 4) < (minDist * minDist)) {
-
           if (perimeter(candidates[i]) < perimeter(candidates[j])) {
             candidates[i].tooNear = true;
           } else {
@@ -135,7 +138,7 @@ export class Detector {
       }
     }
 
-    for (i = 0; i < len; ++i) {
+    for (let i = 0; i < len; ++i) {
       if (!candidates[i].tooNear) {
         notTooNear.push(candidates[i]);
       }
@@ -144,17 +147,17 @@ export class Detector {
     return notTooNear;
   };
 
-  findMarkers(imageSrc: CVImage, candidates: any, warpSize: number) {
-    let markers: any[] = [], len = candidates.length, candidate, marker, i;
+  findMarkers (imageSrc: ImageData, candidates: CVContour[], warpSize: number): Marker[] {
+    const markers: Marker[] = [];
+    const len = candidates.length;
 
-    for (i = 0; i < len; ++i) {
-      candidate = candidates[i];
+    for (let i = 0; i < len; ++i) {
+      const candidate = candidates[i];
 
-      warp(imageSrc, this.homography, candidate, warpSize);
+      const warped = warp(imageSrc, candidate, warpSize);
+      const threshhold = threshold(warped, otsu(warped));
 
-      threshold(this.homography, this.homography, otsu(this.homography));
-
-      marker = this.getMarker(this.homography, candidate);
+      const marker = this.getMarker(threshhold, candidate);
       if (marker) {
         markers.push(marker);
       }
@@ -163,17 +166,17 @@ export class Detector {
     return markers;
   }
 
-  getMarker(imageSrc: CVImage, candidate: any) {
-    var width = (imageSrc.width / 7) >>> 0,
-      minZero = (width * width) >> 1,
-      bits: any[] = [], rotations: any[] = [], distances: any[] = [],
-      square, pair, inc, i, j;
+  getMarker (imageSrc: ImageData, candidate: CVContour): Marker | null {
+    const width = (imageSrc.width / 7) >>> 0;
+    const minZero = (width * width) >> 1;
+    const bits: any[] = []; const rotations: any[] = []; const distances: any[] = [];
+    let square; let pair; let inc; let i; let j;
 
     for (i = 0; i < 7; ++i) {
-      inc = (0 === i || 6 === i) ? 1 : 6;
+      inc = (i === 0 || i === 6) ? 1 : 6;
 
       for (j = 0; j < 7; j += inc) {
-        square = { x: j * width, y: i * width, width: width, height: width };
+        square = { x: j * width, y: i * width, width, height: width };
         if (countNonZero(imageSrc, square) > minZero) {
           return null;
         }
@@ -184,7 +187,7 @@ export class Detector {
       bits[i] = [];
 
       for (j = 0; j < 5; ++j) {
-        square = { x: (j + 1) * width, y: (i + 1) * width, width: width, height: width };
+        square = { x: (j + 1) * width, y: (i + 1) * width, width, height: width };
 
         bits[i][j] = countNonZero(imageSrc, square) > minZero ? 1 : 0;
       }
@@ -205,7 +208,7 @@ export class Detector {
       }
     }
 
-    if (0 !== pair.first) {
+    if (pair.first !== 0) {
       return null;
     }
 
@@ -214,17 +217,17 @@ export class Detector {
       this.rotate2(candidate, 4 - pair.second));
   };
 
-  hammingDistance(bits: number[][]) {
-    var ids = [[1, 0, 0, 0, 0], [1, 0, 1, 1, 1], [0, 1, 0, 0, 1], [0, 1, 1, 1, 0]],
-      dist = 0, sum, minSum, i, j, k;
+  hammingDistance (bits: number[][]) {
+    const ids = [[1, 0, 0, 0, 0], [1, 0, 1, 1, 1], [0, 1, 0, 0, 1], [0, 1, 1, 1, 0]];
+    let dist = 0; let sum; let minSum;
 
-    for (i = 0; i < 5; ++i) {
+    for (let i = 0; i < 5; ++i) {
       minSum = Infinity;
 
-      for (j = 0; j < 4; ++j) {
+      for (let j = 0; j < 4; ++j) {
         sum = 0;
 
-        for (k = 0; k < 5; ++k) {
+        for (let k = 0; k < 5; ++k) {
           sum += bits[i][k] === ids[j][k] ? 0 : 1;
         }
 
@@ -239,10 +242,10 @@ export class Detector {
     return dist;
   };
 
-  mat2id(bits: number[][]): number {
-    var id = 0, i;
+  mat2id (bits: number[][]): number {
+    let id = 0;
 
-    for (i = 0; i < 5; ++i) {
+    for (let i = 0; i < 5; ++i) {
       id <<= 1;
       id |= bits[i][1];
       id <<= 1;
@@ -252,12 +255,12 @@ export class Detector {
     return id;
   }
 
-  rotate(src: any[]) {
-    var dst: any = [], len = src.length, i, j;
+  rotate (src: any[]) {
+    const dst: any = []; const len = src.length;
 
-    for (i = 0; i < len; ++i) {
+    for (let i = 0; i < len; ++i) {
       dst[i] = [];
-      for (j = 0; j < src[i].length; ++j) {
+      for (let j = 0; j < src[i].length; ++j) {
         dst[i][j] = src[src[i].length - j - 1][i];
       }
     }
@@ -265,14 +268,16 @@ export class Detector {
     return dst;
   }
 
-  rotate2 = function (src: number[], rotation: number) {
-    var dst: any[] = [], len = src.length, i;
+  rotate2 (src: CVContour, rotation: number): CVContour {
+    const dst: CVContour = {
+      points: [],
+      hole: false,
+      tooNear: false
+    }; const len = src.points.length; let i;
 
     for (i = 0; i < len; ++i) {
-      dst[i] = src[(rotation + i) % len];
+      dst.points[i] = src.points[(rotation + i) % len];
     }
     return dst;
-  };
-
-
+  }
 }

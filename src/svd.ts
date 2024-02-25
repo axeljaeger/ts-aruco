@@ -26,260 +26,258 @@ References:
   http://www.nr.com/
 */
 
-export class SVD {
+export const svdcmp = (a, m, n, w, v): boolean => {
+  let flag; let i; let its; let j; let jj; let k; let l; let nm;
+  let anorm = 0.0; let c; let f; let g = 0.0; let h; let s; let scale = 0.0; let x; let y; let z; const rv1: number[] = [];
 
-  static svdcmp(a, m, n, w, v) {
-    var flag, i, its, j, jj, k, l, nm,
-      anorm = 0.0, c, f, g = 0.0, h, s, scale = 0.0, x, y, z, rv1: number[] = [];
-
-    //Householder reduction to bidiagonal form
-    for (i = 0; i < n; ++i) {
-      l = i + 1;
-      rv1[i] = scale * g;
-      g = s = scale = 0.0;
-      if (i < m) {
+  // Householder reduction to bidiagonal form
+  for (i = 0; i < n; ++i) {
+    l = i + 1;
+    rv1[i] = scale * g;
+    g = s = scale = 0.0;
+    if (i < m) {
+      for (k = i; k < m; ++k) {
+        scale += Math.abs(a[k][i]);
+      }
+      if (scale !== 0.0) {
         for (k = i; k < m; ++k) {
-          scale += Math.abs(a[k][i]);
+          a[k][i] /= scale;
+          s += a[k][i] * a[k][i];
         }
-        if (0.0 !== scale) {
-          for (k = i; k < m; ++k) {
-            a[k][i] /= scale;
-            s += a[k][i] * a[k][i];
-          }
-          f = a[i][i];
-          g = -this.sign(Math.sqrt(s), f);
-          h = f * g - s;
-          a[i][i] = f - g;
-          for (j = l; j < n; ++j) {
-            for (s = 0.0, k = i; k < m; ++k) {
-              s += a[k][i] * a[k][j];
-            }
-            f = s / h;
-            for (k = i; k < m; ++k) {
-              a[k][j] += f * a[k][i];
-            }
-          }
-          for (k = i; k < m; ++k) {
-            a[k][i] *= scale;
-          }
-        }
-      }
-      w[i] = scale * g;
-      g = s = scale = 0.0;
-      if ((i < m) && (i !== n - 1)) {
-        for (k = l; k < n; ++k) {
-          scale += Math.abs(a[i][k]);
-        }
-        if (0.0 !== scale) {
-          for (k = l; k < n; ++k) {
-            a[i][k] /= scale;
-            s += a[i][k] * a[i][k];
-          }
-          f = a[i][l];
-          g = -this.sign(Math.sqrt(s), f);
-          h = f * g - s;
-          a[i][l] = f - g;
-          for (k = l; k < n; ++k) {
-            rv1[k] = a[i][k] / h;
-          }
-          for (j = l; j < m; ++j) {
-            for (s = 0.0, k = l; k < n; ++k) {
-              s += a[j][k] * a[i][k];
-            }
-            for (k = l; k < n; ++k) {
-              a[j][k] += s * rv1[k];
-            }
-          }
-          for (k = l; k < n; ++k) {
-            a[i][k] *= scale;
-          }
-        }
-      }
-      anorm = Math.max(anorm, (Math.abs(w[i]) + Math.abs(rv1[i])));
-    }
-
-    //Acumulation of right-hand transformation
-    for (i = n - 1; i >= 0; --i) {
-      if (i < n - 1) {
-        if (0.0 !== g) {
-          for (j = l; j < n; ++j) {
-            v[j][i] = (a[i][j] / a[i][l]) / g;
-          }
-          for (j = l; j < n; ++j) {
-            for (s = 0.0, k = l; k < n; ++k) {
-              s += a[i][k] * v[k][j];
-            }
-            for (k = l; k < n; ++k) {
-              v[k][j] += s * v[k][i];
-            }
-          }
-        }
+        f = a[i][i];
+        g = -sign(Math.sqrt(s), f);
+        h = f * g - s;
+        a[i][i] = f - g;
         for (j = l; j < n; ++j) {
-          v[i][j] = v[j][i] = 0.0;
-        }
-      }
-      v[i][i] = 1.0;
-      g = rv1[i];
-      l = i;
-    }
-
-    //Acumulation of left-hand transformation
-    for (i = Math.min(n, m) - 1; i >= 0; --i) {
-      l = i + 1;
-      g = w[i];
-      for (j = l; j < n; ++j) {
-        a[i][j] = 0.0;
-      }
-      if (0.0 !== g) {
-        g = 1.0 / g;
-        for (j = l; j < n; ++j) {
-          for (s = 0.0, k = l; k < m; ++k) {
+          for (s = 0.0, k = i; k < m; ++k) {
             s += a[k][i] * a[k][j];
           }
-          f = (s / a[i][i]) * g;
+          f = s / h;
           for (k = i; k < m; ++k) {
             a[k][j] += f * a[k][i];
           }
         }
-        for (j = i; j < m; ++j) {
-          a[j][i] *= g;
-        }
-      } else {
-        for (j = i; j < m; ++j) {
-          a[j][i] = 0.0;
+        for (k = i; k < m; ++k) {
+          a[k][i] *= scale;
         }
       }
-      ++a[i][i];
     }
-
-    //Diagonalization of the bidiagonal form
-    for (k = n - 1; k >= 0; --k) {
-      for (its = 1; its <= 30; ++its) {
-        flag = true;
-        for (l = k; l >= 0; --l) {
-          nm = l - 1;
-          if (Math.abs(rv1[l]) + anorm === anorm) {
-            flag = false;
-            break;
+    w[i] = scale * g;
+    g = s = scale = 0.0;
+    if ((i < m) && (i !== n - 1)) {
+      for (k = l; k < n; ++k) {
+        scale += Math.abs(a[i][k]);
+      }
+      if (scale !== 0.0) {
+        for (k = l; k < n; ++k) {
+          a[i][k] /= scale;
+          s += a[i][k] * a[i][k];
+        }
+        f = a[i][l];
+        g = -sign(Math.sqrt(s), f);
+        h = f * g - s;
+        a[i][l] = f - g;
+        for (k = l; k < n; ++k) {
+          rv1[k] = a[i][k] / h;
+        }
+        for (j = l; j < m; ++j) {
+          for (s = 0.0, k = l; k < n; ++k) {
+            s += a[j][k] * a[i][k];
           }
-          if (Math.abs(w[nm]) + anorm === anorm) {
-            break;
+          for (k = l; k < n; ++k) {
+            a[j][k] += s * rv1[k];
           }
         }
-        if (flag) {
-          c = 0.0;
-          s = 1.0;
-          for (i = l; i <= k; ++i) {
-            f = s * rv1[i];
-            if (Math.abs(f) + anorm === anorm) {
-              break;
-            }
-            g = w[i];
-            h = this.pythag(f, g);
-            w[i] = h;
-            h = 1.0 / h;
-            c = g * h;
-            s = -f * h;
-            for (j = 1; j <= m; ++j) {
-              y = a[j][nm];
-              z = a[j][i];
-              a[j][nm] = y * c + z * s;
-              a[j][i] = z * c - y * s;
-            }
+        for (k = l; k < n; ++k) {
+          a[i][k] *= scale;
+        }
+      }
+    }
+    anorm = Math.max(anorm, (Math.abs(w[i]) + Math.abs(rv1[i])));
+  }
+
+  // Acumulation of right-hand transformation
+  for (i = n - 1; i >= 0; --i) {
+    if (i < n - 1) {
+      if (g !== 0.0) {
+        for (j = l; j < n; ++j) {
+          v[j][i] = (a[i][j] / a[i][l]) / g;
+        }
+        for (j = l; j < n; ++j) {
+          for (s = 0.0, k = l; k < n; ++k) {
+            s += a[i][k] * v[k][j];
+          }
+          for (k = l; k < n; ++k) {
+            v[k][j] += s * v[k][i];
           }
         }
+      }
+      for (j = l; j < n; ++j) {
+        v[i][j] = v[j][i] = 0.0;
+      }
+    }
+    v[i][i] = 1.0;
+    g = rv1[i];
+    l = i;
+  }
 
-        //Convergence
-        z = w[k];
-        if (l === k) {
-          if (z < 0.0) {
-            w[k] = -z;
-            for (j = 0; j < n; ++j) {
-              v[j][k] = -v[j][k];
-            }
-          }
+  // Acumulation of left-hand transformation
+  for (i = Math.min(n, m) - 1; i >= 0; --i) {
+    l = i + 1;
+    g = w[i];
+    for (j = l; j < n; ++j) {
+      a[i][j] = 0.0;
+    }
+    if (g !== 0.0) {
+      g = 1.0 / g;
+      for (j = l; j < n; ++j) {
+        for (s = 0.0, k = l; k < m; ++k) {
+          s += a[k][i] * a[k][j];
+        }
+        f = (s / a[i][i]) * g;
+        for (k = i; k < m; ++k) {
+          a[k][j] += f * a[k][i];
+        }
+      }
+      for (j = i; j < m; ++j) {
+        a[j][i] *= g;
+      }
+    } else {
+      for (j = i; j < m; ++j) {
+        a[j][i] = 0.0;
+      }
+    }
+    ++a[i][i];
+  }
+
+  // Diagonalization of the bidiagonal form
+  for (k = n - 1; k >= 0; --k) {
+    for (its = 1; its <= 30; ++its) {
+      flag = true;
+      for (l = k; l >= 0; --l) {
+        nm = l - 1;
+        if (Math.abs(rv1[l]) + anorm === anorm) {
+          flag = false;
           break;
         }
-
-        if (30 === its) {
-          return false;
+        if (Math.abs(w[nm]) + anorm === anorm) {
+          break;
         }
-
-        //Shift from bottom 2-by-2 minor
-        x = w[l];
-        nm = k - 1;
-        y = w[nm];
-        g = rv1[nm];
-        h = rv1[k];
-        f = ((y - z) * (y + z) + (g - h) * (g + h)) / (2.0 * h * y);
-        g = this.pythag(f, 1.0);
-        f = ((x - z) * (x + z) + h * ((y / (f + this.sign(g, f))) - h)) / x;
-
-        //Next QR transformation
-        c = s = 1.0;
-        for (j = l; j <= nm; ++j) {
-          i = j + 1;
-          g = rv1[i];
-          y = w[i];
-          h = s * g;
-          g = c * g;
-          z = this.pythag(f, h);
-          rv1[j] = z;
-          c = f / z;
-          s = h / z;
-          f = x * c + g * s;
-          g = g * c - x * s;
-          h = y * s;
-          y *= c;
-          for (jj = 0; jj < n; ++jj) {
-            x = v[jj][j];
-            z = v[jj][i];
-            v[jj][j] = x * c + z * s;
-            v[jj][i] = z * c - x * s;
-          }
-          z = this.pythag(f, h);
-          w[j] = z;
-          if (0.0 !== z) {
-            z = 1.0 / z;
-            c = f * z;
-            s = h * z;
-          }
-          f = c * g + s * y;
-          x = c * y - s * g;
-          for (jj = 0; jj < m; ++jj) {
-            y = a[jj][j];
-            z = a[jj][i];
-            a[jj][j] = y * c + z * s;
-            a[jj][i] = z * c - y * s;
-          }
-        }
-        rv1[l] = 0.0;
-        rv1[k] = f;
-        w[k] = x;
       }
+      if (flag) {
+        c = 0.0;
+        s = 1.0;
+        for (i = l; i <= k; ++i) {
+          f = s * rv1[i];
+          if (Math.abs(f) + anorm === anorm) {
+            break;
+          }
+          g = w[i];
+          h = pythag(f, g);
+          w[i] = h;
+          h = 1.0 / h;
+          c = g * h;
+          s = -f * h;
+          for (j = 1; j <= m; ++j) {
+            y = a[j][nm];
+            z = a[j][i];
+            a[j][nm] = y * c + z * s;
+            a[j][i] = z * c - y * s;
+          }
+        }
+      }
+
+      // Convergence
+      z = w[k];
+      if (l === k) {
+        if (z < 0.0) {
+          w[k] = -z;
+          for (j = 0; j < n; ++j) {
+            v[j][k] = -v[j][k];
+          }
+        }
+        break;
+      }
+
+      if (its === 30) {
+        return false;
+      }
+
+      // Shift from bottom 2-by-2 minor
+      x = w[l];
+      nm = k - 1;
+      y = w[nm];
+      g = rv1[nm];
+      h = rv1[k];
+      f = ((y - z) * (y + z) + (g - h) * (g + h)) / (2.0 * h * y);
+      g = pythag(f, 1.0);
+      f = ((x - z) * (x + z) + h * ((y / (f + sign(g, f))) - h)) / x;
+
+      // Next QR transformation
+      c = s = 1.0;
+      for (j = l; j <= nm; ++j) {
+        i = j + 1;
+        g = rv1[i];
+        y = w[i];
+        h = s * g;
+        g = c * g;
+        z = pythag(f, h);
+        rv1[j] = z;
+        c = f / z;
+        s = h / z;
+        f = x * c + g * s;
+        g = g * c - x * s;
+        h = y * s;
+        y *= c;
+        for (jj = 0; jj < n; ++jj) {
+          x = v[jj][j];
+          z = v[jj][i];
+          v[jj][j] = x * c + z * s;
+          v[jj][i] = z * c - x * s;
+        }
+        z = pythag(f, h);
+        w[j] = z;
+        if (z !== 0.0) {
+          z = 1.0 / z;
+          c = f * z;
+          s = h * z;
+        }
+        f = c * g + s * y;
+        x = c * y - s * g;
+        for (jj = 0; jj < m; ++jj) {
+          y = a[jj][j];
+          z = a[jj][i];
+          a[jj][j] = y * c + z * s;
+          a[jj][i] = z * c - y * s;
+        }
+      }
+      rv1[l] = 0.0;
+      rv1[k] = f;
+      w[k] = x;
     }
+  }
 
-    return true;
-  };
+  return true;
+};
 
-  static pythag(a, b) {
-    var at = Math.abs(a), bt = Math.abs(b), ct;
+const pythag = (a: number, b: number): number => {
+  const at = Math.abs(a);
+  const bt = Math.abs(b);
+  let ct;
 
-    if (at > bt) {
-      ct = bt / at;
-      return at * Math.sqrt(1.0 + ct * ct);
-    }
+  if (at > bt) {
+    ct = bt / at;
+    return at * Math.sqrt(1.0 + ct * ct);
+  }
 
-    if (0.0 === bt) {
-      return 0.0;
-    }
+  if (bt === 0.0) {
+    return 0.0;
+  }
 
-    ct = at / bt;
-    return bt * Math.sqrt(1.0 + ct * ct);
-  };
+  ct = at / bt;
+  return bt * Math.sqrt(1.0 + ct * ct);
+};
 
-  static sign(a, b) {
-    return b >= 0.0 ? Math.abs(a) : -Math.abs(a);
-  };
-
-}
+const sign = (a: number, b: number): number => {
+  return b >= 0.0 ? Math.abs(a) : -Math.abs(a);
+};
