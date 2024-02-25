@@ -275,90 +275,6 @@ export const stackBoxBlur = (imageSrc: CVImage, imageDst: CVImage, kernelSize: n
   return imageDst;
 };
 
-const gaussianBlur = (imageSrc: CVImage, imageDst: CVImage, imageMean: CVImage, kernelSize: number) => {
-  var kernel = gaussianKernel(kernelSize);
-
-  imageDst.width = imageSrc.width;
-  imageDst.height = imageSrc.height;
-
-  imageMean.width = imageSrc.width;
-  imageMean.height = imageSrc.height;
-
-  gaussianBlurFilter(imageSrc, imageMean, kernel, true);
-  gaussianBlurFilter(imageMean, imageDst, kernel, false);
-
-  return imageDst;
-};
-
-const gaussianBlurFilter = (imageSrc: CVImage, imageDst: CVImage, kernel: string | any[], horizontal: any) => {
-  var src = imageSrc.data, dst = imageDst.data,
-    height = imageSrc.height, width = imageSrc.width,
-    pos = 0, limit = kernel.length >> 1,
-    cur: number, value: number, i: number, j: number, k: number;
-
-  for (i = 0; i < height; ++i) {
-
-    for (j = 0; j < width; ++j) {
-      value = 0.0;
-
-      for (k = -limit; k <= limit; ++k) {
-
-        if (horizontal) {
-          cur = pos + k;
-          if (j + k < 0) {
-            cur = pos;
-          }
-          else if (j + k >= width) {
-            cur = pos;
-          }
-        } else {
-          cur = pos + (k * width);
-          if (i + k < 0) {
-            cur = pos;
-          }
-          else if (i + k >= height) {
-            cur = pos;
-          }
-        }
-
-        value += kernel[limit + k] * src[cur];
-      }
-
-      dst[pos++] = horizontal ? value : (value + 0.5) & 0xff;
-    }
-  }
-
-  return imageDst;
-};
-
-const gaussianKernel = (kernelSize: number) => {
-  var tab =
-    [[1],
-    [0.25, 0.5, 0.25],
-    [0.0625, 0.25, 0.375, 0.25, 0.0625],
-    [0.03125, 0.109375, 0.21875, 0.28125, 0.21875, 0.109375, 0.03125]],
-    kernel: number[] = [], center: number, sigma: number, scale2X: number, sum: number, x: number, i: number;
-
-  if ((kernelSize <= 7) && (kernelSize % 2 === 1)) {
-    kernel = tab[kernelSize >> 1];
-  } else {
-    center = (kernelSize - 1.0) * 0.5;
-    sigma = 0.8 + (0.3 * (center - 1.0));
-    scale2X = -0.5 / (sigma * sigma);
-    sum = 0.0;
-    for (i = 0; i < kernelSize; ++i) {
-      x = i - center;
-      sum += kernel[i] = Math.exp(scale2X * x * x);
-    }
-    sum = 1 / sum;
-    for (i = 0; i < kernelSize; ++i) {
-      kernel[i] *= sum;
-    }
-  }
-
-  return kernel;
-};
-
 export const findContours = (imageSrc: CVImage, binary: any): CVContour[] => {
   var width = imageSrc.width, height = imageSrc.height, contours: CVContour[] = [],
     src: number[], deltas: any, pos: number, pix: number, nbd: number, outer: boolean, hole: boolean, i: number, j: number;
@@ -398,7 +314,7 @@ export const findContours = (imageSrc: CVImage, binary: any): CVContour[] => {
 };
 
 const borderFollowing = (src: { [x: string]: any; }, pos: string | number, nbd: number, point: { x: any; y: any; }, hole: boolean, deltas: any[]): CVContour => {
-  var contour: CVContour = { hole: false, points: [] }, pos1: string | number, pos3: string | number, pos4: string | number, s: number, s_end: number, s_prev: number;
+  var contour: CVContour = { hole: false, points: [] }, pos1: string | number, pos3: string | number, pos4: string | number, s: number, s_end: number;
 
   contour.hole = hole;
 
@@ -417,7 +333,6 @@ const borderFollowing = (src: { [x: string]: any; }, pos: string | number, nbd: 
 
   } else {
     pos3 = pos;
-    s_prev = s ^ 4;
 
     while (true) {
       s_end = s;
@@ -437,7 +352,6 @@ const borderFollowing = (src: { [x: string]: any; }, pos: string | number, nbd: 
 
       contour.points.push({ x: point.x, y: point.y });
 
-      s_prev = s;
 
       point.x += neighborhood[s][0];
       point.y += neighborhood[s][1];

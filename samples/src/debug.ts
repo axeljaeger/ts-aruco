@@ -10,7 +10,6 @@ let detector: Detector;
 let debugImage: ImageData;
 let warpImage: ImageData;
 let homographyImage: any;
-let pixels: any[];
 
 export function onLoad() {
   camera = document.getElementById("video") as HTMLVideoElement;
@@ -34,7 +33,6 @@ export function onLoad() {
     );
 
   imageData = context.getImageData(0, 0, camera.width, camera.height);
-  pixels = [];
   detector = new Detector();
 
   debugImage = context.createImageData(camera.width, camera.height);
@@ -71,14 +69,14 @@ function drawDebug() {
   context.putImageData(createImage(detector.grey, debugImage), width, 0);
   context.putImageData(createImage(detector.thres, debugImage), width * 2, 0);
 
-  drawContours(detector.contours, 0, height, width, height, function (hole: any) { return hole ? "magenta" : "blue"; });
-  drawContours(detector.polys, width, height, width, height, function () { return "green"; });
-  drawContours(detector.candidates, width * 2, height, width, height, function () { return "red"; });
+  drawContours(detector.contours, 0, height, function (hole: any) { return hole ? "magenta" : "blue"; });
+  drawContours(detector.polys, width, height, function () { return "green"; });
+  drawContours(detector.candidates, width * 2, height, function () { return "red"; });
 
-  drawWarps(detector.grey, detector.candidates, 0, height * 2 + 20);
+  drawWarps(detector.grey, detector.candidates, height * 2 + 20);
 }
 
-function drawContours(contours: CVContour[], x: number, y: number, width: number, height: number, fn: any) {
+function drawContours(contours: CVContour[], x: number, y: number, fn: any) {
   var i = contours.length, j, contour, point;
 
   while (i--) {
@@ -99,8 +97,8 @@ function drawContours(contours: CVContour[], x: number, y: number, width: number
   }
 }
 
-function drawWarps(imageSrc: any, contours: any, x: number, y: number) {
-  var i = contours.length, j, contour;
+function drawWarps(imageSrc: any, contours: any, y: number) {
+  var i = contours.length, contour;
 
   var offset = (canvas.width - ((warpImage.width + 10) * contours.length)) / 2
   while (i--) {
