@@ -28,8 +28,9 @@ References:
 
 import { type CVContour, adaptiveThreshold, approxPolyDP, countNonZero, findContours, grayscale, isContourConvex, minEdgeLength, otsu, perimeter, threshold, warp } from './cv';
 
-export class Marker {
-  constructor (public id: number, public corners: CVContour) { }
+export interface Marker {
+  id: number
+  corners: CVContour
 }
 
 export class Detector {
@@ -209,9 +210,10 @@ export class Detector {
       return null;
     }
 
-    return new Marker(
-      this.mat2id(rotations[pair.second]),
-      this.rotate2(candidate, 4 - pair.second));
+    return {
+      id: this.mat2id(rotations[pair.second]),
+      corners: this.rotate2(candidate, 4 - pair.second)
+    };
   };
 
   hammingDistance (bits: number[][]): number {
