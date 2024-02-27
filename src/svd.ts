@@ -26,8 +26,8 @@ References:
   http://www.nr.com/
 */
 
-export const svdcmp = (a, m, n, w, v): boolean => {
-  let flag; let i; let its; let j; let jj; let k; let l; let nm;
+export const svdcmp = (a: number[][], m: number, n: number, w: number[], v: number[][]): boolean => {
+  let flag; let i: number; let its; let j: number; let jj; let k; let l: number = 0; let nm: number = 0;
   let anorm = 0.0; let c; let f; let g = 0.0; let h; let s; let scale = 0.0; let x; let y; let z; const rv1: number[] = [];
 
   // Householder reduction to bidiagonal form

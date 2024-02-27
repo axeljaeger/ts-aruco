@@ -9,6 +9,7 @@ export default defineConfig({
         index: resolve(__dirname, "index.html"),
         getusermedia: resolve(__dirname, "getusermedia.html"),
         debug: resolve(__dirname, "debug.html"),
+        debugPosit: resolve(__dirname, "debug-posit.html"),
       },
     },
   },
