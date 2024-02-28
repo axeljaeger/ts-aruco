@@ -162,7 +162,7 @@ function createScenes(): void {
 
 function createPlane(): THREE.Object3D {
   const object = new THREE.Object3D();
-  const geometry = new THREE.PlaneGeometry(1.0, 1.0, 0.0);
+  const geometry = new THREE.PlaneGeometry(1, 1);
   const material = new THREE.MeshNormalMaterial();
   const mesh = new THREE.Mesh(geometry, material);
 
@@ -174,9 +174,9 @@ function createPlane(): THREE.Object3D {
 };
 
 function createTexture(): THREE.Object3D {
-  const texture = new THREE.Texture(video);
+  const texture = new THREE.VideoTexture(video);
   const object = new THREE.Object3D();
-  const geometry = new THREE.PlaneGeometry(0.8, 0.8, 0.0);
+  const geometry = new THREE.PlaneGeometry(1.0, 1.0);
   const material = new THREE.MeshBasicMaterial({ map: texture, depthTest: false, depthWrite: false });
   const mesh = new THREE.Mesh(geometry, material);
 
