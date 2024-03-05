@@ -16,10 +16,6 @@ Visual Debugging:
 
 - [Debug session jam!](https://jcmellado.github.io/js-aruco/debug/debug.html)
 
-Flash camera access (see details bellow):
-
-- [Webcam live demo!](https://jcmellado.github.io/js-aruco/webcam/webcam.html)
-
 ### Videos ###
 
 Webcam video adquisition:
@@ -120,7 +116,3 @@ for (var i = 0; i < corners.length; ++ i){
  * `alternativeTranslation`: Translation vector of the alternative estimated pose.
 
 Note: POS namespace can be taken from posit1.js or posit2.js.
-
-### Flash Demo (deprecated) ###
-
-It uses [Flashcam](https://github.com/jcmellado/flashcam), a minimal Flash library to capture video.
