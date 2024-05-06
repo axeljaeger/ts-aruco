@@ -38,7 +38,7 @@ class Pose {
   alternativeRotation: any;
   alternativeTranslation: any;
 
-  constructor(error1: number, rotation1: number[][], translation1: number[], error2: number, rotation2: number[][], translation2: number[]) {
+  constructor (error1: number, rotation1: number[][], translation1: number[], error2: number, rotation2: number[][], translation2: number[]) {
     this.bestError = error1;
     this.bestRotation = rotation1;
     this.bestTranslation = translation1;
@@ -150,10 +150,10 @@ export class Posit {
       : new Pose(error2.pixels, rotation2, translation2, error1.pixels, rotation1, translation1);
   };
 
-  pos(imagePoints: CVPoint[], rotation1: number[][], rotation2: number[][], translation: number[]): void {
+  pos (imagePoints: CVPoint[], rotation1: number[][], rotation2: number[][], translation: number[]): void {
     const np = this.objectPoints.length; const imageVectors: any[] = [];
     const i0: number[] = []; const j0: number[] = []; const ivec: number[] = []; const jvec: number[] = []; const row1: number[] = []; const row2: number[] = []; const row3: number[] = [];
-    let i0i0; let j0j0; let i0j0; let delta; let q; let lambda; let mu; let scale; let i; let j;
+    let i0i0; let j0j0; let i0j0; let q; let lambda; let mu; let i; let j;
 
     for (i = 0; i < np; ++i) {
       imageVectors[i] = [imagePoints[i].x - imagePoints[0].x,
@@ -175,7 +175,7 @@ export class Posit {
     i0j0 = i0[0] * j0[0] + i0[1] * j0[1] + i0[2] * j0[2];
 
     // Lambda and mu
-    delta = (j0j0 - i0i0) * (j0j0 - i0i0) + 4.0 * (i0j0 * i0j0);
+    const delta = (j0j0 - i0i0) * (j0j0 - i0i0) + 4.0 * (i0j0 * i0j0);
 
     if (j0j0 - i0i0 >= 0.0) {
       q = (j0j0 - i0i0 + Math.sqrt(delta)) / 2.0;
@@ -205,7 +205,7 @@ export class Posit {
       jvec[i] = j0[i] + mu * this.objectNormal[i];
     }
 
-    scale = Math.sqrt(ivec[0] * ivec[0] + ivec[1] * ivec[1] + ivec[2] * ivec[2]);
+    const scale = Math.sqrt(ivec[0] * ivec[0] + ivec[1] * ivec[1] + ivec[2] * ivec[2]);
 
     for (i = 0; i < 3; ++i) {
       row1[i] = ivec[i] / scale;
@@ -402,7 +402,7 @@ export class Posit {
     return error;
   }
 
-  error(imagePoints: CVPoint[], rotation: number[][], translation: number[]) {
+  error (imagePoints: CVPoint[], rotation: number[][], translation: number[]) {
     const np = this.objectPoints.length;
     const move: number[][] = []; const projection: number[][] = []; const errorvec: number[][] = [];
     let euclidean = 0.0; let pixels = 0.0; let maximum = 0.0;
