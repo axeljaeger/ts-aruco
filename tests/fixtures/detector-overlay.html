@@ -1,0 +1,164 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>ArUco detector overlay regression fixture</title>
+    <style>
+      body {
+        margin: 0;
+        padding: 32px;
+        background: #f3f4f6;
+        color: #111827;
+        font-family: system-ui, sans-serif;
+      }
+
+      canvas {
+        display: block;
+      }
+
+      #overlay {
+        background: white;
+      }
+
+      #status {
+        margin-top: 12px;
+        font-size: 14px;
+      }
+    </style>
+  </head>
+  <body>
+    <canvas id="overlay" width="640" height="480"></canvas>
+    <canvas id="fixture-frame" width="640" height="480" hidden></canvas>
+    <div id="status">pending</div>
+
+    <script type="module">
+      import { Detector } from "../../dist/index.js";
+
+      const width = 640;
+      const height = 480;
+      const markerSize = 196;
+      const markerX = 222;
+      const markerY = 138;
+      const cellSize = markerSize / 7;
+      const markerRows = [
+        [0, 1, 1, 1, 0],
+        [0, 1, 1, 1, 0],
+        [0, 1, 0, 0, 1],
+        [0, 1, 0, 0, 1],
+        [1, 0, 1, 1, 1],
+      ];
+
+      const overlay = document.querySelector("#overlay");
+      const fixtureFrame = document.querySelector("#fixture-frame");
+      const status = document.querySelector("#status");
+      const overlayContext = overlay.getContext("2d");
+      const fixtureContext = fixtureFrame.getContext("2d");
+
+      window.__arucoRegression = {
+        ready: false,
+        markerIds: [],
+        markerCount: 0,
+        cameraMocked: false,
+      };
+
+      function drawFixtureFrame(context) {
+        context.fillStyle = "#ffffff";
+        context.fillRect(0, 0, width, height);
+
+        context.fillStyle = "#111111";
+        context.fillRect(markerX, markerY, markerSize, markerSize);
+
+        context.fillStyle = "#ffffff";
+        for (let row = 0; row < markerRows.length; row += 1) {
+          for (let column = 0; column < markerRows[row].length; column += 1) {
+            if (markerRows[row][column] === 1) {
+              context.fillRect(
+                markerX + (column + 1) * cellSize,
+                markerY + (row + 1) * cellSize,
+                cellSize,
+                cellSize,
+              );
+            }
+          }
+        }
+      }
+
+      function drawCorners(context, markers) {
+        context.lineWidth = 3;
+
+        for (const marker of markers) {
+          const corners = marker.corners;
+
+          context.strokeStyle = "red";
+          context.beginPath();
+
+          for (let i = 0; i < corners.length; i += 1) {
+            let corner = corners[i];
+            context.moveTo(corner.x, corner.y);
+            corner = corners[(i + 1) % corners.length];
+            context.lineTo(corner.x, corner.y);
+          }
+
+          context.stroke();
+          context.closePath();
+
+          context.strokeStyle = "green";
+          context.strokeRect(corners[0].x - 2, corners[0].y - 2, 4, 4);
+        }
+      }
+
+      function drawId(context, markers) {
+        context.strokeStyle = "blue";
+        context.lineWidth = 1;
+        context.font = "16px monospace";
+
+        for (const marker of markers) {
+          let x = Infinity;
+          let y = Infinity;
+
+          for (const corner of marker.corners) {
+            x = Math.min(x, corner.x);
+            y = Math.min(y, corner.y);
+          }
+
+          context.strokeText(marker.id, x, y);
+        }
+      }
+
+      async function mockCameraWithFixtureFrame() {
+        if (!navigator.mediaDevices) {
+          navigator.mediaDevices = {};
+        }
+
+        const stream = fixtureFrame.captureStream(1);
+        navigator.mediaDevices.getUserMedia = async () => stream;
+        await navigator.mediaDevices.getUserMedia({ video: true });
+        window.__arucoRegression.cameraMocked = true;
+      }
+
+      async function run() {
+        drawFixtureFrame(fixtureContext);
+        await mockCameraWithFixtureFrame();
+
+        overlayContext.drawImage(fixtureFrame, 0, 0);
+
+        const detector = new Detector();
+        const imageData = overlayContext.getImageData(0, 0, width, height);
+        const markers = detector.detect(imageData);
+
+        drawCorners(overlayContext, markers);
+        drawId(overlayContext, markers);
+
+        window.__arucoRegression.markerIds = markers.map((marker) => marker.id);
+        window.__arucoRegression.markerCount = markers.length;
+        window.__arucoRegression.ready = true;
+        status.textContent = `detected ${markers.map((marker) => marker.id).join(", ")}`;
+      }
+
+      run().catch((error) => {
+        status.textContent = error instanceof Error ? error.message : String(error);
+        throw error;
+      });
+    </script>
+  </body>
+</html>
