@@ -6,7 +6,14 @@
     "useIgnoreFile": true
   },
   "files": {
-    "includes": ["src/**/*.ts", "*.json", "*.md"]
+    "includes": [
+      "src/**/*.ts",
+      "tests/**/*.ts",
+      "tests/**/*.mjs",
+      "playwright.config.ts",
+      "*.json",
+      "*.md"
+    ]
   },
   "formatter": {
     "enabled": true,

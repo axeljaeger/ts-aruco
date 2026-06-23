@@ -21,10 +21,13 @@
     "check": "biome check . && tsc -p tsconfig.json --noEmit",
     "format": "biome format --write .",
     "lint": "biome lint .",
+    "test:e2e": "npm run build && playwright test",
+    "test:e2e:update": "npm run build && playwright test --update-snapshots",
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "devDependencies": {
     "@biomejs/biome": "2.5.1",
+    "@playwright/test": "^1.61.0",
     "typescript": "5.9.3"
   }
 }
