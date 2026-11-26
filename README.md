@@ -156,7 +156,7 @@ npm run bench     # CPU benchmark, port vs. original
 npm run check     # Biome + type checks
 ```
 
-CI (`.github/workflows/ci.yml`) runs lint and type checks, unit tests on Node 20, 22 and 24, the
+CI (`.github/workflows/ci.yml`) runs lint and type checks, unit tests on Node 22 and 24, the
 library and site builds and the browser tests on every push and pull request. Dependabot
 (`.github/dependabot.yml`) proposes weekly updates for npm packages and GitHub Actions.
 

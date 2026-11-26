@@ -35,7 +35,7 @@
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "test": "vitest run",
     "test:unit": "vitest run",
-    "bench": "vite-node tests/bench/bench.ts",
+    "bench": "tsx tests/bench/bench.ts",
     "site:dev": "vite",
     "site:build": "vite build",
     "site:preview": "vite preview",
@@ -53,9 +53,10 @@
     "@webgpu/types": "^0.1.74",
     "qrcode": "^1.5.4",
     "three": "^0.187.0",
+    "tsx": "^4.23.15",
     "typescript": "5.9.3",
     "vite": "^7.3.8",
-    "vitest": "^3.2.7"
+    "vitest": "^5.1.2"
   },
   "sideEffects": false,
   "engines": {
