@@ -1,0 +1,11 @@
+{
+  "name": "ArUco marker",
+  "short_name": "Marker",
+  "start_url": "./marker.html",
+  "scope": "./",
+  "display": "fullscreen",
+  "orientation": "portrait",
+  "background_color": "#ffffff",
+  "theme_color": "#ffffff",
+  "icons": [{ "src": "./marker-icon.svg", "sizes": "any", "type": "image/svg+xml" }]
+}

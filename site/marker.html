@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no" />
+    <meta name="theme-color" content="#ffffff" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="apple-mobile-web-app-title" content="ArUco marker" />
+    <link rel="manifest" href="./marker.webmanifest" />
+    <title>ArUco marker · ts-aruco</title>
+    <style>
+      html,
+      body {
+        margin: 0;
+        height: 100%;
+        background: #fff;
+        color: #222;
+        font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+        overflow: hidden;
+        touch-action: none;
+        -webkit-user-select: none;
+        user-select: none;
+      }
+      #marker {
+        position: fixed;
+        left: 50%;
+        top: 50%;
+        translate: -50% -50%;
+        image-rendering: pixelated;
+      }
+      #panel {
+        position: fixed;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        padding: 1rem 1rem calc(1rem + env(safe-area-inset-bottom));
+        background: #fffe;
+        border-top: 1px solid #ddd;
+        text-align: center;
+        font-size: 0.95rem;
+      }
+      #panel[hidden] {
+        display: none;
+      }
+      #start {
+        font: inherit;
+        font-size: 1.15rem;
+        font-weight: 600;
+        padding: 0.8rem 1.6rem;
+        border-radius: 999px;
+        border: 0;
+        background: #111;
+        color: #fff;
+      }
+      #panel p {
+        margin: 0.6rem 0 0;
+        color: #555;
+      }
+      #panel .row {
+        display: flex;
+        gap: 0.5rem;
+        justify-content: center;
+        align-items: center;
+        margin-top: 0.6rem;
+      }
+      #panel .row button {
+        font: inherit;
+        min-width: 2.5rem;
+        padding: 0.3rem 0.6rem;
+      }
+      #ios {
+        display: none;
+      }
+      .ios #ios {
+        display: block;
+      }
+    </style>
+  </head>
+  <body>
+    <canvas id="marker" aria-label="ArUco marker"></canvas>
+    <div id="panel">
+      <button id="start" type="button">Show marker</button>
+      <p>Goes full screen, locks the rotation and keeps the display on. Tap the marker to bring this panel back.</p>
+      <p id="ios">
+        On iPhone, Safari does not allow web pages to go full screen or lock the rotation. Turn on
+        <b>Portrait Orientation Lock</b> in Control Centre, or use <b>Share &rarr; Add to Home Screen</b> and open the
+        marker from there for an almost full screen view.
+      </p>
+      <div class="row">
+        <button id="prev" type="button" aria-label="Previous marker">&minus;</button>
+        <span>Marker <b id="id"></b></span>
+        <button id="next" type="button" aria-label="Next marker">+</button>
+      </div>
+    </div>
+    <script type="module" src="./src/marker.ts"></script>
+  </body>
+</html>

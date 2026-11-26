@@ -1,0 +1,117 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>ts-aruco · ArUco marker tracking with WebGL2 and WebGPU</title>
+    <meta name="description" content="ArUco marker detection in TypeScript with GPU preprocessing, with AR demos for three.js, Babylon.js and Babylon Lite." />
+    <link rel="icon" href="./marker-icon.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="./src/landing.css" />
+  </head>
+  <body>
+    <main>
+      <header>
+        <h1>ts-aruco</h1>
+        <p class="lead">
+          ArUco marker detection for the web, ported from Juan Mellado's
+          <a href="https://github.com/jcmellado/js-aruco">js-aruco</a> to strict TypeScript. Greyscale, blur and
+          adaptive threshold run on the GPU with WebGL2 or WebGPU, bit-exact with the original.
+        </p>
+      </header>
+
+      <section class="step" id="marker">
+        <div class="num">1</div>
+        <div class="body">
+          <h2>Put a marker on your phone</h2>
+          <p>
+            Scan the code with your phone. It opens a page that shows the marker full screen and keeps the display on.
+            Turn the brightness up.
+          </p>
+          <div class="marker-row">
+            <figure>
+              <canvas id="qr" width="220" height="220" aria-label="QR code that opens the marker page"></canvas>
+              <figcaption><a id="marker-link" href="./marker.html">Open the marker page</a></figcaption>
+            </figure>
+            <figure>
+              <canvas id="preview" width="220" height="220" aria-label="Preview of the marker"></canvas>
+              <figcaption>Marker <span id="marker-id"></span> · <a id="marker-svg" download>SVG for printing</a></figcaption>
+            </figure>
+          </div>
+        </div>
+      </section>
+
+      <section class="step">
+        <div class="num">2</div>
+        <div class="body">
+          <h2>Fly a plane</h2>
+          <p>
+            Open a demo on your computer, allow the webcam and hold the phone up to it. A little plane sits on the marker.
+            Move the phone around and it leaves a smoke trail behind it.
+          </p>
+          <div class="cards">
+            <a class="card" href="./demos/three.html">
+              <h3>three.js</h3>
+              <p>WebGPURenderer, or its WebGL2 backend without WebGPU. Preprocessing shares the renderer's GPU device.</p>
+              <span class="tags"><span>WebGPU</span> <span>WebGL2</span></span>
+            </a>
+            <a class="card" href="./demos/babylon.html">
+              <h3>Babylon.js</h3>
+              <p>WebGPU engine, or the WebGL2 engine without WebGPU. Preprocessing shares the engine's GPU device.</p>
+              <span class="tags"><span>WebGPU</span> <span>WebGL2</span></span>
+            </a>
+            <a class="card webgpu" href="./demos/lite.html">
+              <h3>Babylon Lite</h3>
+              <p>The new, WebGPU-only Babylon. Preprocessing uses its own WebGPU device.</p>
+              <span class="tags"><span>WebGPU</span></span>
+            </a>
+          </div>
+          <p class="small">
+            The demos use WebGPU wherever the browser offers it, then WebGL2, then the CPU. The selector at the top of
+            a demo picks the preprocessing by hand, e.g. <a href="./demos/three.html?mode=cpu">three.js with CPU
+            preprocessing</a>; <code>?renderer=webgl2</code> forces the WebGL2 renderer.
+            <span id="webgpu-note"></span>
+          </p>
+        </div>
+      </section>
+
+      <section class="step">
+        <div class="num">3</div>
+        <div class="body">
+          <h2>The original demos</h2>
+          <p>Juan Mellado's js-aruco samples, unchanged, running the original JavaScript.</p>
+          <ul class="links">
+            <li><a href="./original/getusermedia/getusermedia.html">Marker detector</a>: webcam with marker outlines and ids.</li>
+            <li><a href="./original/debug/debug.html">Debug view</a>: greyscale, threshold, contours, polygons and candidates.</li>
+            <li><a href="./original/debug-posit/debug-posit.html">3D pose</a>: POSIT pose estimation with an old three.js.</li>
+          </ul>
+          <p class="small">The Flash webcam sample of the original is left out: no browser runs Flash any more.</p>
+        </div>
+      </section>
+
+      <section class="step">
+        <div class="num">&#9881;</div>
+        <div class="body">
+          <h2>How fast?</h2>
+          <p>Preprocessing per frame on a MacBook Air M4 (Chrome), from camera frame to the mask on the CPU:</p>
+          <table>
+            <thead>
+              <tr><th></th><th>640×480</th><th>1280×720</th><th>1920×1080</th></tr>
+            </thead>
+            <tbody>
+              <tr><th>CPU (incl. getImageData)</th><td>2.4 ms</td><td>7.1 ms</td><td>15.3 ms</td></tr>
+              <tr><th>WebGL2, main thread busy</th><td>1.1 ms</td><td>1.8 ms</td><td>2.3 ms</td></tr>
+              <tr><th>WebGPU, round trip</th><td>1.5 ms</td><td>1.6 ms</td><td>2.9 ms</td></tr>
+            </tbody>
+          </table>
+          <p class="small">The demos show their own numbers at the bottom left.</p>
+        </div>
+      </section>
+
+      <footer>
+        <a id="repo">Source on GitHub</a> · MIT licence · js-aruco © 2011 Juan Mellado · The airplane model is made for
+        this site from code (<code>scripts/make-airplane.mjs</code>).
+      </footer>
+    </main>
+    <script type="module" src="./src/landing.ts"></script>
+  </body>
+</html>

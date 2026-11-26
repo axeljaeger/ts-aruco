@@ -10,6 +10,9 @@
       "src/**/*.ts",
       "scripts/**/*.mjs",
       "tests/**/*.ts",
+      "site/src/**/*.ts",
+      "site/src/**/*.css",
+      "vite.config.ts",
       "tests/**/*.js",
       "tests/**/*.mjs",
       "playwright.config.ts",
@@ -46,5 +49,17 @@
       "semicolons": "always",
       "trailingCommas": "all"
     }
-  }
+  },
+  "overrides": [
+    {
+      "includes": ["site/src/**"],
+      "linter": {
+        "rules": {
+          "style": {
+            "noNonNullAssertion": "off"
+          }
+        }
+      }
+    }
+  ]
 }
