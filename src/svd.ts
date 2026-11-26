@@ -61,7 +61,7 @@ export function svdcmp(a: number[][], m: number, n: number, w: number[], v: numb
       for (k = i; k < m; ++k) {
         scale += Math.abs(a[k][i]);
       }
-      if (0.0 !== scale) {
+      if (scale !== 0.0) {
         for (k = i; k < m; ++k) {
           a[k][i] /= scale;
           s += a[k][i] * a[k][i];
@@ -90,7 +90,7 @@ export function svdcmp(a: number[][], m: number, n: number, w: number[], v: numb
       for (k = l; k < n; ++k) {
         scale += Math.abs(a[i][k]);
       }
-      if (0.0 !== scale) {
+      if (scale !== 0.0) {
         for (k = l; k < n; ++k) {
           a[i][k] /= scale;
           s += a[i][k] * a[i][k];
@@ -121,7 +121,7 @@ export function svdcmp(a: number[][], m: number, n: number, w: number[], v: numb
   //Acumulation of right-hand transformation
   for (i = n - 1; i >= 0; --i) {
     if (i < n - 1) {
-      if (0.0 !== g) {
+      if (g !== 0.0) {
         for (j = l; j < n; ++j) {
           v[j][i] = a[i][j] / a[i][l] / g;
         }
@@ -150,7 +150,7 @@ export function svdcmp(a: number[][], m: number, n: number, w: number[], v: numb
     for (j = l; j < n; ++j) {
       a[i][j] = 0.0;
     }
-    if (0.0 !== g) {
+    if (g !== 0.0) {
       g = 1.0 / g;
       for (j = l; j < n; ++j) {
         for (s = 0.0, k = l; k < m; ++k) {
@@ -221,7 +221,7 @@ export function svdcmp(a: number[][], m: number, n: number, w: number[], v: numb
         break;
       }
 
-      if (30 === its) {
+      if (its === 30) {
         return false;
       }
 
@@ -242,7 +242,7 @@ export function svdcmp(a: number[][], m: number, n: number, w: number[], v: numb
         g = rv1[i];
         y = w[i];
         h = s * g;
-        g = c * g;
+        g *= c;
         z = pythag(f, h);
         rv1[j] = z;
         c = f / z;
@@ -259,7 +259,7 @@ export function svdcmp(a: number[][], m: number, n: number, w: number[], v: numb
         }
         z = pythag(f, h);
         w[j] = z;
-        if (0.0 !== z) {
+        if (z !== 0.0) {
           z = 1.0 / z;
           c = f * z;
           s = h * z;
@@ -292,7 +292,7 @@ export function pythag(a: number, b: number): number {
     return at * Math.sqrt(1.0 + ct * ct);
   }
 
-  if (0.0 === bt) {
+  if (bt === 0.0) {
     return 0.0;
   }
 

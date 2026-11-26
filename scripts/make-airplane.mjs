@@ -247,8 +247,8 @@ function addAccessor(data, withBounds) {
     type: "VEC3",
   };
   if (withBounds) {
-    const min = [Infinity, Infinity, Infinity];
-    const max = [-Infinity, -Infinity, -Infinity];
+    const min = [Number.POSITIVE_INFINITY, Number.POSITIVE_INFINITY, Number.POSITIVE_INFINITY];
+    const max = [Number.NEGATIVE_INFINITY, Number.NEGATIVE_INFINITY, Number.NEGATIVE_INFINITY];
     for (let i = 0; i < data.length; i += 3) {
       for (let k = 0; k < 3; ++k) {
         min[k] = Math.min(min[k], data[i + k]);

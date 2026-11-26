@@ -7,15 +7,15 @@ import { puffGeometry } from "./common/puff-geometry.js";
 const MAX_PUFFS = 400;
 
 class ThreeRenderer implements DemoRenderer {
-  gl?: WebGL2RenderingContext;
-  device?: GPUDevice;
+  gl: WebGL2RenderingContext | undefined;
+  device: GPUDevice | undefined;
   backend = "";
 
   private renderer!: THREE.WebGPURenderer;
   private readonly scene = new THREE.Scene();
   private readonly camera = new THREE.PerspectiveCamera(45, 16 / 9, 0.05, 200);
-  private plane = new THREE.Group();
-  private propeller?: THREE.Object3D;
+  private readonly plane = new THREE.Group();
+  private propeller: THREE.Object3D | undefined;
   private puffs!: THREE.InstancedMesh;
 
   async init(canvas: HTMLCanvasElement): Promise<void> {

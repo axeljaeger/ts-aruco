@@ -30,15 +30,15 @@ function isRgba(source: AutoFrameSource): source is ImageData {
 
 export interface AutoPreprocessorOptions {
   /** Backends to try, in order. Default: WebGPU, then WebGL2, then the CPU. */
-  backends?: readonly PreprocessorBackend[];
+  backends?: readonly PreprocessorBackend[] | undefined;
   /** Reuse a renderer's WebGPU device (e.g. three.js WebGPURenderer, Babylon WebGPUEngine). */
-  device?: GPUDevice;
+  device?: GPUDevice | undefined;
   /** Reuse a renderer's WebGL2 context. The preprocessor restores the GL state it touches. */
-  gl?: WebGL2RenderingContext;
+  gl?: WebGL2RenderingContext | undefined;
   /** Same as `DetectorOptions.adaptiveThresholdKernelSize`. Default 2. */
-  kernelSize?: number;
+  kernelSize?: number | undefined;
   /** Same as `DetectorOptions.adaptiveThresholdConstant`. Default 7. */
-  thresholdConstant?: number;
+  thresholdConstant?: number | undefined;
 }
 
 export const DEFAULT_BACKENDS: readonly PreprocessorBackend[] = ["webgpu", "webgl2", "cpu"];
@@ -101,8 +101,8 @@ export class CpuPreprocessor implements FramePreprocessor {
   readonly backend = "cpu" as const;
   private readonly kernelSize: number;
   private readonly thresholdConstant: number;
-  private canvas?: OffscreenCanvas | HTMLCanvasElement;
-  private ctx?: OffscreenCanvasRenderingContext2D | CanvasRenderingContext2D;
+  private canvas: OffscreenCanvas | HTMLCanvasElement | undefined;
+  private ctx: OffscreenCanvasRenderingContext2D | CanvasRenderingContext2D | undefined;
 
   constructor(options: Pick<AutoPreprocessorOptions, "kernelSize" | "thresholdConstant"> = {}) {
     this.kernelSize = options.kernelSize ?? 2;

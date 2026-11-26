@@ -11,9 +11,16 @@
     "rootDir": "src",
     "strict": true,
     "noImplicitOverride": true,
-    "noUncheckedIndexedAccess": false,
-    "exactOptionalPropertyTypes": false,
-    "skipLibCheck": true
+    "exactOptionalPropertyTypes": true,
+    "skipLibCheck": true,
+    "noImplicitReturns": true,
+    "noFallthroughCasesInSwitch": true,
+    "noPropertyAccessFromIndexSignature": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "verbatimModuleSyntax": true,
+    "erasableSyntaxOnly": true,
+    "isolatedDeclarations": true
   },
   "include": ["src/**/*.ts"],
   "exclude": ["dist", "samples"]

@@ -117,8 +117,8 @@ function drawId(context, markers) {
   context.font = "16px monospace";
 
   for (const marker of markers) {
-    let x = Infinity;
-    let y = Infinity;
+    let x = Number.POSITIVE_INFINITY;
+    let y = Number.POSITIVE_INFINITY;
 
     for (const corner of marker.corners) {
       x = Math.min(x, corner.x);

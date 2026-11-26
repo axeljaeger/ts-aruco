@@ -32,7 +32,7 @@ class LiteRenderer implements DemoRenderer {
   private scene!: ReturnType<typeof createSceneContext>;
   private camera!: FreeCamera;
   private plane!: SceneNode;
-  private propeller?: SceneNode;
+  private propeller: SceneNode | undefined;
   private puffs!: Mesh;
   private visible = true;
 

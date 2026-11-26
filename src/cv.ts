@@ -209,9 +209,9 @@ export function otsu(imageSrc: Image): number {
 
   for (let i = 0; i < 256; ++i) {
     wB += hist[i];
-    if (0 !== wB) {
+    if (wB !== 0) {
       wF = len - wB;
-      if (0 === wF) {
+      if (wF === 0) {
         break;
       }
 
@@ -424,7 +424,7 @@ export function gaussianKernel(kernelSize: number): number[] {
 
 /** Scratch buffer for {@link findContours}; reuse it between frames to avoid allocations. */
 export class ContourBuffer {
-  data = new Int32Array(0);
+  data: Int32Array = new Int32Array(0);
 
   ensure(size: number): Int32Array {
     if (this.data.length < size) {
@@ -454,13 +454,13 @@ export function findContours(
     for (let j = 0; j < width; ++j, ++pos) {
       const pix = src[pos];
 
-      if (0 !== pix) {
+      if (pix !== 0) {
         let outer = false;
         let hole = false;
 
-        if (1 === pix && 0 === src[pos - 1]) {
+        if (pix === 1 && src[pos - 1] === 0) {
           outer = true;
-        } else if (pix >= 1 && 0 === src[pos + 1]) {
+        } else if (pix >= 1 && src[pos + 1] === 0) {
           hole = true;
         }
 
@@ -579,7 +579,7 @@ export function approxPolyDP(contour: readonly Point[], epsilon: number): Contou
   let dy: number;
   let k = 0;
 
-  epsilon *= epsilon;
+  const epsilonSq = epsilon * epsilon;
 
   for (let i = 0; i < 3; ++i) {
     maxDist = 0;
@@ -607,7 +607,7 @@ export function approxPolyDP(contour: readonly Point[], epsilon: number): Contou
     }
   }
 
-  if (maxDist <= epsilon) {
+  if (maxDist <= epsilonSq) {
     poly.push({ x: startPt.x, y: startPt.y });
   } else {
     slice.startIndex = k;
@@ -654,7 +654,7 @@ export function approxPolyDP(contour: readonly Point[], epsilon: number): Contou
         }
       }
 
-      leEps = maxDist * maxDist <= epsilon * (dx * dx + dy * dy);
+      leEps = maxDist * maxDist <= epsilonSq * (dx * dx + dy * dy);
     }
 
     if (leEps) {
@@ -749,7 +749,7 @@ export function square2quad(src: readonly Point[]): number[] {
   const px = src[0].x - src[1].x + src[2].x - src[3].x;
   const py = src[0].y - src[1].y + src[2].y - src[3].y;
 
-  if (0 === px && 0 === py) {
+  if (px === 0 && py === 0) {
     sq[0] = src[1].x - src[0].x;
     sq[1] = src[2].x - src[1].x;
     sq[2] = src[0].x;
@@ -803,7 +803,7 @@ export function isContourConvex(contour: readonly Point[]): boolean {
 
     orientation |= dydx0 > dxdy0 ? 1 : dydx0 < dxdy0 ? 2 : 3;
 
-    if (3 === orientation) {
+    if (orientation === 3) {
       return false;
     }
 
@@ -830,7 +830,7 @@ export function perimeter(poly: readonly Point[]): number {
 
 export function minEdgeLength(poly: readonly Point[]): number {
   const len = poly.length;
-  let min = Infinity;
+  let min = Number.POSITIVE_INFINITY;
 
   for (let i = 0, j = len - 1; i < len; j = i++) {
     const dx = poly[i].x - poly[j].x;
@@ -855,7 +855,7 @@ export function countNonZero(imageSrc: Image, square: Square): number {
 
   for (let i = 0; i < height; ++i) {
     for (let j = 0; j < width; ++j) {
-      if (0 !== src[pos++]) {
+      if (src[pos++] !== 0) {
         ++nz;
       }
     }
@@ -882,7 +882,7 @@ export function binaryBorder(imageSrc: Image, dst: Int32Array): Int32Array {
     dst[posDst++] = 0;
 
     for (let j = 0; j < width; ++j) {
-      dst[posDst++] = 0 === src[posSrc++] ? 0 : 1;
+      dst[posDst++] = src[posSrc++] === 0 ? 0 : 1;
     }
 
     dst[posDst++] = 0;

@@ -4,7 +4,9 @@
     "rootDir": ".",
     "noEmit": true,
     "lib": ["ES2022", "DOM"],
-    "types": ["node"]
+    "types": ["node"],
+    "noPropertyAccessFromIndexSignature": false,
+    "isolatedDeclarations": false
   },
   "include": ["src/**/*.ts", "tests/unit/**/*.ts", "tests/support/**/*.ts", "tests/bench/**/*.ts"]
 }

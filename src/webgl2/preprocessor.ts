@@ -10,7 +10,7 @@ export interface TextureSource {
   width: number;
   height: number;
   /** Set when row 0 of the texture is the bottom of the image (e.g. three.js `flipY`). */
-  flipY?: boolean;
+  flipY?: boolean | undefined;
 }
 
 /** Anything WebGL can upload (video, canvas, ImageBitmap, ImageData, ...) or a texture. */
@@ -18,9 +18,9 @@ export type FrameSource = TexImageSource | TextureSource;
 
 export interface WebGL2PreprocessorOptions {
   /** Same as `DetectorOptions.adaptiveThresholdKernelSize`. Default 2. */
-  kernelSize?: number;
+  kernelSize?: number | undefined;
   /** Same as `DetectorOptions.adaptiveThresholdConstant`. Default 7. */
-  thresholdConstant?: number;
+  thresholdConstant?: number | undefined;
 }
 
 interface Target {

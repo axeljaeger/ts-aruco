@@ -26,7 +26,10 @@ export * as SVD from "./svd.js";
 import { Detector, Marker } from "./aruco.js";
 
 /** Namespace with the names of the original js-aruco `AR` global. */
-export const AR = { Detector, Marker } as const;
+export const AR: { readonly Detector: typeof Detector; readonly Marker: typeof Marker } = {
+  Detector,
+  Marker,
+};
 export {
   type AutoFrameSource,
   type AutoPreprocessorOptions,

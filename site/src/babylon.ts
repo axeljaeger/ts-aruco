@@ -25,15 +25,15 @@ const MAX_PUFFS = 400;
 const PROP_AXIS = new Vector3(0, 0, 1);
 
 class BabylonRenderer implements DemoRenderer {
-  device?: GPUDevice;
-  gl?: WebGL2RenderingContext;
+  device: GPUDevice | undefined;
+  gl: WebGL2RenderingContext | undefined;
   backend = "";
 
   private engine!: AbstractEngine;
   private scene!: Scene;
   private camera!: UniversalCamera;
   private plane!: TransformNode;
-  private propeller?: TransformNode;
+  private propeller: TransformNode | undefined;
   private puffs!: Mesh;
   private readonly puffBuffer = new Float32Array(16 * MAX_PUFFS);
 

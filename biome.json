@@ -36,10 +36,42 @@
       "preset": "recommended",
       "suspicious": {
         "noAssignInExpressions": "off",
-        "noImplicitAnyLet": "off"
+        "noImplicitAnyLet": "off",
+        "noExplicitAny": "error",
+        "noVar": "error"
       },
       "complexity": {
-        "useArrowFunction": "off"
+        "useArrowFunction": "off",
+        "noForEach": "error",
+        "useOptionalChain": "error"
+      },
+      "style": {
+        "useImportType": "error",
+        "useExportType": "error",
+        "noNonNullAssertion": "error",
+        "useConst": "error",
+        "useTemplate": "error",
+        "noParameterAssign": "error",
+        "useForOf": "error",
+        "useConsistentArrayType": {
+          "level": "error",
+          "options": {
+            "syntax": "shorthand"
+          }
+        },
+        "noInferrableTypes": "error",
+        "useNumberNamespace": "error",
+        "useExponentiationOperator": "error",
+        "noUselessElse": "error",
+        "useShorthandAssign": "error",
+        "useNodejsImportProtocol": "error",
+        "useBlockStatements": "off",
+        "noYodaExpression": "error",
+        "useReadonlyClassProperties": "error"
+      },
+      "correctness": {
+        "noUnusedImports": "error",
+        "noUnusedVariables": "error"
       }
     }
   },

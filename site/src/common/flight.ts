@@ -75,7 +75,7 @@ export class Flight {
   };
 
   private target: MarkerPose | null = null;
-  private targetTime = -Infinity;
+  private targetTime = Number.NEGATIVE_INFINITY;
   private smoothedPosition: Vec3 = [0, 0, -5];
   private smoothedRotation: Quat = [0, 0, 0, 1];
   private hasPose = false;

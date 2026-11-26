@@ -33,10 +33,13 @@ export type Bits = number[][];
 
 /** A detected marker: its id and its 4 image corners, clockwise from the marker's top-left. */
 export class Marker {
-  constructor(
-    public id: number,
-    public corners: CV.Point[],
-  ) {}
+  id: number;
+  corners: CV.Point[];
+
+  constructor(id: number, corners: CV.Point[]) {
+    this.id = id;
+    this.corners = corners;
+  }
 }
 
 export interface DetectorOptions {
@@ -78,9 +81,9 @@ export class Detector {
   readonly options: Readonly<Required<DetectorOptions>>;
 
   /** Intermediate images of the last frame, useful for debugging. */
-  readonly grey = new CV.Image();
-  readonly thres = new CV.Image();
-  readonly homography = new CV.Image();
+  readonly grey: CV.Image = new CV.Image();
+  readonly thres: CV.Image = new CV.Image();
+  readonly homography: CV.Image = new CV.Image();
   contours: CV.TracedContour[] = [];
   polys: CV.Contour[] = [];
   candidates: CV.Contour[] = [];
@@ -144,7 +147,7 @@ export class Detector {
 
         this.polys.push(poly);
 
-        if (4 === poly.length && CV.isContourConvex(poly)) {
+        if (poly.length === 4 && CV.isContourConvex(poly)) {
           if (CV.minEdgeLength(poly) >= minLength) {
             candidates.push(poly);
           }
@@ -227,7 +230,7 @@ export class Detector {
 
     // The outer ring of cells must be black.
     for (let i = 0; i < 7; ++i) {
-      const inc = 0 === i || 6 === i ? 1 : 6;
+      const inc = i === 0 || i === 6 ? 1 : 6;
 
       for (let j = 0; j < 7; j += inc) {
         const square = { x: j * width, y: i * width, width, height: width };
@@ -263,7 +266,7 @@ export class Detector {
       }
     }
 
-    if (0 !== bestDistance) {
+    if (bestDistance !== 0) {
       return null;
     }
 
@@ -277,7 +280,7 @@ export class Detector {
     let dist = 0;
 
     for (let i = 0; i < 5; ++i) {
-      let minSum = Infinity;
+      let minSum = Number.POSITIVE_INFINITY;
 
       for (const code of ROW_CODES) {
         let sum = 0;

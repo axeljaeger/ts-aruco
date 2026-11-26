@@ -36,9 +36,9 @@ import * as SVD from "./svd.js";
 export class Posit {
   readonly model: Vec3[];
   readonly focalLength: number;
-  modelVectors = new Mat3();
-  modelPseudoInverse = new Mat3();
-  modelNormal = new Vec3();
+  modelVectors: Mat3 = new Mat3();
+  modelPseudoInverse: Mat3 = new Mat3();
+  modelNormal: Vec3 = new Vec3();
 
   /**
    * @param modelSize Edge length of the real marker.
@@ -127,7 +127,7 @@ export class Posit {
     let scale;
     let temp;
 
-    if (0.0 === s) {
+    if (s === 0.0) {
       r = Math.sqrt(Math.abs(2.0 * ij));
       theta = (-Math.PI / 2.0) * (ij < 0.0 ? -1 : ij > 0.0 ? 1.0 : 0.0);
     } else {
@@ -176,14 +176,14 @@ export class Posit {
   }
 
   iterate(points: readonly Point[], rotation: Mat3, translation: Vec3): number {
-    let prevError = Infinity;
+    let prevError = Number.POSITIVE_INFINITY;
     const rotation1 = new Mat3();
     const rotation2 = new Mat3();
     const translation1 = new Vec3();
     const translation2 = new Vec3();
     let i = 0;
     let eps;
-    let error = Infinity;
+    let error = Number.POSITIVE_INFINITY;
     let error1;
     let error2;
 

@@ -40,11 +40,11 @@ export interface TrackResult {
 
 export interface TrackerOptions {
   /** Backends to try in order. */
-  modes?: readonly Mode[];
+  modes?: readonly Mode[] | undefined;
   /** Share the renderer's WebGL2 context (three.js) instead of creating a hidden one. */
-  gl?: WebGL2RenderingContext;
+  gl?: WebGL2RenderingContext | undefined;
   /** Share the renderer's WebGPU device instead of requesting a new one. */
-  device?: GPUDevice;
+  device?: GPUDevice | undefined;
 }
 
 /**
@@ -56,9 +56,12 @@ export class Tracker {
   private readonly detector = new Detector();
   private posit?: Posit;
   private positWidth = 0;
-  private previous = new Map<number, Quat>();
+  private readonly previous = new Map<number, Quat>();
 
-  private constructor(private readonly pre: FramePreprocessor) {
+  private readonly pre: FramePreprocessor;
+
+  private constructor(pre: FramePreprocessor) {
+    this.pre = pre;
     this.mode = pre.backend;
   }
 

@@ -14,9 +14,9 @@ export interface DemoRenderer {
   /** "WebGPU" or "WebGL2", for the stats line. Known after `init()`. */
   readonly backend: string;
   /** The renderer's own WebGL2 context, shared with the WebGL2 preprocessor when available. */
-  readonly gl?: WebGL2RenderingContext;
+  readonly gl?: WebGL2RenderingContext | undefined;
   /** The renderer's own WebGPU device, shared with the WebGPU preprocessor when available. */
-  readonly device?: GPUDevice;
+  readonly device?: GPUDevice | undefined;
 }
 
 interface Elements {

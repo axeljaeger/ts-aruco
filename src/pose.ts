@@ -6,12 +6,26 @@
  * by js-aruco: x right, y up, z pointing away from the camera into the scene.
  */
 export class Pose {
+  bestError: number;
+  bestRotation: number[][];
+  bestTranslation: number[];
+  alternativeError: number;
+  alternativeRotation: number[][];
+  alternativeTranslation: number[];
+
   constructor(
-    public bestError: number,
-    public bestRotation: number[][],
-    public bestTranslation: number[],
-    public alternativeError: number,
-    public alternativeRotation: number[][],
-    public alternativeTranslation: number[],
-  ) {}
+    bestError: number,
+    bestRotation: number[][],
+    bestTranslation: number[],
+    alternativeError: number,
+    alternativeRotation: number[][],
+    alternativeTranslation: number[],
+  ) {
+    this.bestError = bestError;
+    this.bestRotation = bestRotation;
+    this.bestTranslation = bestTranslation;
+    this.alternativeError = alternativeError;
+    this.alternativeRotation = alternativeRotation;
+    this.alternativeTranslation = alternativeTranslation;
+  }
 }

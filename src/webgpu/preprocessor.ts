@@ -9,7 +9,7 @@ export type { PreprocessResult } from "../preprocess.js";
 export interface GPUTextureSource {
   texture: GPUTexture;
   /** Set when row 0 of the texture is the bottom of the image. */
-  flipY?: boolean;
+  flipY?: boolean | undefined;
 }
 
 /**
@@ -28,9 +28,9 @@ export type WebGPUFrameSource =
 
 export interface WebGPUPreprocessorOptions {
   /** Same as `DetectorOptions.adaptiveThresholdKernelSize`. Default 2. */
-  kernelSize?: number;
+  kernelSize?: number | undefined;
   /** Same as `DetectorOptions.adaptiveThresholdConstant`. Default 7. */
-  thresholdConstant?: number;
+  thresholdConstant?: number | undefined;
 }
 
 interface Target {

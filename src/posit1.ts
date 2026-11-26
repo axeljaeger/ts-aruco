@@ -85,7 +85,7 @@ export class Posit {
       vectors[i] = [this.objectVectors[i][0], this.objectVectors[i][1], this.objectVectors[i][2]];
     }
 
-    while (0.0 === len) {
+    while (len === 0.0) {
       n[0] =
         this.objectVectors[1][1] * this.objectVectors[row][2] -
         this.objectVectors[1][2] * this.objectVectors[row][1];
@@ -210,14 +210,14 @@ export class Posit {
 
     if (q >= 0.0) {
       lambda = Math.sqrt(q);
-      if (0.0 === lambda) {
+      if (lambda === 0.0) {
         mu = 0.0;
       } else {
         mu = -i0j0 / lambda;
       }
     } else {
       lambda = Math.sqrt(-(i0j0 * i0j0) / q);
-      if (0.0 === lambda) {
+      if (lambda === 0.0) {
         mu = Math.sqrt(i0i0 - j0j0);
       } else {
         mu = -i0j0 / lambda;
@@ -276,7 +276,7 @@ export class Posit {
 
   isValid(rotation: number[][], translation: number[]): boolean {
     const np = this.objectPoints.length;
-    let zmin = Infinity;
+    let zmin = Number.POSITIVE_INFINITY;
     let i = 0;
     let zi;
 
@@ -360,7 +360,7 @@ export class Posit {
     error = error1 = this.error(imagePoints, rotation, translation1);
 
     //Convergence
-    converged = 0.0 === error1.pixels || imageDifference < 0.01;
+    converged = error1.pixels === 0.0 || imageDifference < 0.01;
 
     while (iteration++ < 100 && !converged) {
       for (i = 0; i < np; ++i) {
@@ -442,7 +442,7 @@ export class Posit {
 
       delta = Math.abs(imageDifference - oldImageDifference);
 
-      converged = 0.0 === error.pixels || delta < 0.01;
+      converged = error.pixels === 0.0 || delta < 0.01;
     }
 
     return error;
@@ -536,7 +536,7 @@ export function pseudoInverse(a: number[][], n: number, b: number[][]): void {
   }
 
   for (j = 0; j < 3; ++j) {
-    if (0.0 === w[j]) {
+    if (w[j] === 0.0) {
       ++cn;
       for (k = j; k < 2; ++k) {
         for (i = 0; i < n; ++i) {
@@ -550,7 +550,7 @@ export function pseudoInverse(a: number[][], n: number, b: number[][]): void {
   }
 
   for (j = 0; j < 2; ++j) {
-    if (0.0 === w[j]) {
+    if (w[j] === 0.0) {
       w[j] = w[j + 1];
     }
   }

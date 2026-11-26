@@ -49,7 +49,7 @@ fn main(@builtin(global_invocation_id) id: vec3u) {
 }
 
 /** Horizontal box blur, same integer arithmetic as js-aruco's stackBoxBlur. */
-export const BLUR_H_SHADER = /* wgsl */ `${PARAMS}
+export const BLUR_H_SHADER: string = /* wgsl */ `${PARAMS}
 @group(0) @binding(1) var<storage, read> grey: array<u32>;
 @group(0) @binding(2) var<storage, read_write> blur: array<u32>;
 
@@ -78,7 +78,7 @@ fn main(@builtin(global_invocation_id) id: vec3u) {
 `;
 
 /** Vertical box blur plus adaptive threshold: 255 where grey - blur <= -threshold. */
-export const THRESHOLD_SHADER = /* wgsl */ `${PARAMS}
+export const THRESHOLD_SHADER: string = /* wgsl */ `${PARAMS}
 @group(0) @binding(1) var<storage, read> grey: array<u32>;
 @group(0) @binding(2) var<storage, read> blur: array<u32>;
 @group(0) @binding(3) var<storage, read_write> mask: array<u32>;
