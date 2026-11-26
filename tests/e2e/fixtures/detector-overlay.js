@@ -1,4 +1,4 @@
-import { Detector } from "../../dist/index.js";
+import { Detector } from "../../../dist/index.js";
 
 const width = 640;
 const height = 480;

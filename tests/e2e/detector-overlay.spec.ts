@@ -63,7 +63,7 @@ const cases = [
 
 for (const testCase of cases) {
   test(`detects ${testCase.name} and preserves the canvas overlay`, async ({ page }) => {
-    await page.goto(`/tests/fixtures/detector-overlay.html?scenario=${testCase.scenario}`);
+    await page.goto(`/tests/e2e/fixtures/detector-overlay.html?scenario=${testCase.scenario}`);
 
     await page.waitForFunction(
       () => window.__arucoRegression?.ready === true || Boolean(window.__arucoRegression?.error),

@@ -26,26 +26,31 @@ References:
   http://www.nr.com/
 */
 
-export function svdcmp(a, m, n, w, v) {
-  var flag,
-    i,
-    its,
-    j,
-    jj,
-    k,
-    l,
-    nm,
-    anorm = 0.0,
-    c,
-    f,
-    g = 0.0,
-    h,
-    s,
-    scale = 0.0,
-    x,
-    y,
-    z,
-    rv1 = [];
+/**
+ * Singular value decomposition (Numerical Recipes `svdcmp`, 0-based).
+ * On return `a` holds U (m x n), `w` the singular values and `v` V (n x n).
+ * Returns false when the QR iteration does not converge in 30 steps.
+ */
+export function svdcmp(a: number[][], m: number, n: number, w: number[], v: number[][]): boolean {
+  let flag: boolean;
+  let i: number;
+  let its: number;
+  let j: number;
+  let jj: number;
+  let k: number;
+  let l = 0;
+  let nm = 0;
+  let anorm = 0.0;
+  let c: number;
+  let f: number;
+  let g = 0.0;
+  let h: number;
+  let s: number;
+  let scale = 0.0;
+  let x: number;
+  let y: number;
+  let z: number;
+  const rv1: number[] = [];
 
   //Householder reduction to bidiagonal form
   for (i = 0; i < n; ++i) {
@@ -195,7 +200,7 @@ export function svdcmp(a, m, n, w, v) {
           h = 1.0 / h;
           c = g * h;
           s = -f * h;
-          for (j = 1; j <= m; ++j) {
+          for (j = 0; j < m; ++j) {
             y = a[j][nm];
             z = a[j][i];
             a[j][nm] = y * c + z * s;
@@ -277,10 +282,10 @@ export function svdcmp(a, m, n, w, v) {
   return true;
 }
 
-export function pythag(a, b) {
-  var at = Math.abs(a),
-    bt = Math.abs(b),
-    ct;
+export function pythag(a: number, b: number): number {
+  const at = Math.abs(a);
+  const bt = Math.abs(b);
+  let ct: number;
 
   if (at > bt) {
     ct = bt / at;
@@ -295,6 +300,6 @@ export function pythag(a, b) {
   return bt * Math.sqrt(1.0 + ct * ct);
 }
 
-export function sign(a, b) {
+export function sign(a: number, b: number): number {
   return b >= 0.0 ? Math.abs(a) : -Math.abs(a);
 }
