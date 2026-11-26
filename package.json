@@ -9,6 +9,10 @@
     ".": {
       "types": "./dist/index.d.ts",
       "default": "./dist/index.js"
+    },
+    "./webgl2": {
+      "types": "./dist/webgl2/index.d.ts",
+      "default": "./dist/webgl2/index.js"
     }
   },
   "files": [

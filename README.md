@@ -45,6 +45,32 @@ e.g. `camera.fov = verticalFieldOfView(canvas.width, canvas.height)` (radians).
 `detector.detectPreprocessed(grey, thresholded)` skips greyscale conversion and thresholding,
 for callers that compute those elsewhere (e.g. on the GPU).
 
+### GPU preprocessing (WebGL2)
+
+Greyscale conversion, blur and adaptive threshold can run on the GPU. The camera frame is
+uploaded as a texture (or an existing texture of the same context is used), and only the
+results are read back:
+
+```ts
+import { Detector } from "ts-aruco";
+import { WebGL2Preprocessor } from "ts-aruco/webgl2";
+
+const gpu = WebGL2Preprocessor.create(); // or new WebGL2Preprocessor(renderer.getContext())
+const detector = new Detector();
+
+video.requestVideoFrameCallback(async function frame() {
+  const { grey, thresholded } = await gpu.process(video); // async readback, no GPU stall
+  const markers = detector.detectPreprocessed(grey, thresholded);
+  video.requestVideoFrameCallback(frame);
+});
+```
+
+Blur and threshold match the CPU version bit for bit. The integer greyscale conversion can be
+1 lower than the original's floating point result for about 0.02% of colours. Browser tests
+compare both paths on synthetic images. `samples/webgl2-detector/` shows both paths side by
+side with timings and has a synthetic benchmark (`npm run dev:samples`, then open
+`http://127.0.0.1:4173/samples/webgl2-detector/`).
+
 ### Compatibility with js-aruco
 
 `AR.Detector`, `AR.Marker`, `POS.Posit` (posit1) and `POS2.Posit` (posit2) keep the original
