@@ -19,6 +19,7 @@
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "check": "biome check . && tsc -p tsconfig.json --noEmit",
+    "dev:samples": "npm run build && node scripts/static-server.mjs",
     "format": "biome format --write .",
     "lint": "biome lint .",
     "test:e2e": "npm run build && playwright test",

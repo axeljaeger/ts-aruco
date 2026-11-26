@@ -7,7 +7,7 @@ export default defineConfig({
   reporter: [["list"]],
   snapshotPathTemplate: "{testDir}/{testFileName}-snapshots/{arg}{ext}",
   webServer: {
-    command: "node tests/support/static-server.mjs",
+    command: "node scripts/static-server.mjs",
     url: "http://127.0.0.1:4173/tests/fixtures/detector-overlay.html",
     reuseExistingServer: !process.env.CI,
   },

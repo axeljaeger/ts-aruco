@@ -8,7 +8,9 @@
   "files": {
     "includes": [
       "src/**/*.ts",
+      "scripts/**/*.mjs",
       "tests/**/*.ts",
+      "tests/**/*.js",
       "tests/**/*.mjs",
       "playwright.config.ts",
       "*.json",
@@ -32,6 +34,9 @@
       "suspicious": {
         "noAssignInExpressions": "off",
         "noImplicitAnyLet": "off"
+      },
+      "complexity": {
+        "useArrowFunction": "off"
       }
     }
   },

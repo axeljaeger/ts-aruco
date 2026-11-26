@@ -1,0 +1,219 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>ts-aruco module detector sample</title>
+    <style>
+      body {
+        margin: 0;
+        min-height: 100vh;
+        background: #eef1f4;
+        color: #1f2933;
+        font-family:
+          Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      }
+
+      main {
+        width: min(100vw - 32px, 920px);
+        margin: 0 auto;
+        padding: 24px 0;
+      }
+
+      header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+        margin-bottom: 12px;
+      }
+
+      h1 {
+        margin: 0;
+        font-size: 20px;
+        font-weight: 650;
+      }
+
+      #status {
+        min-width: 160px;
+        text-align: right;
+        font: 14px/1.3 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      }
+
+      .stage {
+        position: relative;
+        width: 100%;
+        aspect-ratio: 4 / 3;
+        background: white;
+        overflow: hidden;
+        border: 1px solid #c8d0d9;
+      }
+
+      video,
+      canvas {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+      }
+
+      video {
+        object-fit: cover;
+      }
+
+      canvas {
+        image-rendering: auto;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <header>
+        <h1>ts-aruco detector</h1>
+        <div id="status">initializing</div>
+      </header>
+      <div class="stage">
+        <video id="video" autoplay muted playsinline></video>
+        <canvas id="overlay" width="640" height="480"></canvas>
+        <canvas id="fixture" width="640" height="480" hidden></canvas>
+      </div>
+    </main>
+
+    <script type="module">
+      import { Detector } from "../../dist/index.js";
+
+      const width = 640;
+      const height = 480;
+      const detector = new Detector();
+      const video = document.querySelector("#video");
+      const overlay = document.querySelector("#overlay");
+      const fixture = document.querySelector("#fixture");
+      const status = document.querySelector("#status");
+      const context = overlay.getContext("2d");
+      const fixtureContext = fixture.getContext("2d");
+      const source = new URLSearchParams(window.location.search).get("source") ?? "camera";
+      const rowPatterns = [
+        [1, 0, 0, 0, 0],
+        [1, 0, 1, 1, 1],
+        [0, 1, 0, 0, 1],
+        [0, 1, 1, 1, 0],
+      ];
+
+      window.__tsArucoSample = {
+        ready: false,
+        markerIds: [],
+        markerCount: 0,
+        source,
+      };
+
+      function markerRowsFromId(id) {
+        const bits = id.toString(2).padStart(10, "0").slice(-10);
+        const rows = [];
+
+        for (let i = 0; i < bits.length; i += 2) {
+          rows.push(rowPatterns[Number.parseInt(bits.slice(i, i + 2), 2)]);
+        }
+
+        return rows;
+      }
+
+      function drawMarker(target, marker) {
+        const cellSize = marker.size / 7;
+        const rows = markerRowsFromId(marker.id);
+
+        target.fillStyle = "#111111";
+        target.fillRect(marker.x, marker.y, marker.size, marker.size);
+
+        target.fillStyle = "#ffffff";
+        for (let row = 0; row < rows.length; row += 1) {
+          for (let column = 0; column < rows[row].length; column += 1) {
+            if (rows[row][column] === 1) {
+              target.fillRect(
+                marker.x + (column + 1) * cellSize,
+                marker.y + (row + 1) * cellSize,
+                cellSize,
+                cellSize,
+              );
+            }
+          }
+        }
+      }
+
+      function drawFixtureFrame() {
+        fixtureContext.fillStyle = "#ffffff";
+        fixtureContext.fillRect(0, 0, width, height);
+        drawMarker(fixtureContext, { id: 1001, x: 222, y: 138, size: 196 });
+      }
+
+      function drawOverlay(markers) {
+        context.lineWidth = 3;
+        context.font = "16px ui-monospace, SFMono-Regular, Menlo, Consolas, monospace";
+
+        for (const marker of markers) {
+          const corners = marker.corners;
+
+          context.strokeStyle = "red";
+          context.beginPath();
+
+          for (let i = 0; i < corners.length; i += 1) {
+            let corner = corners[i];
+            context.moveTo(corner.x, corner.y);
+            corner = corners[(i + 1) % corners.length];
+            context.lineTo(corner.x, corner.y);
+          }
+
+          context.stroke();
+          context.closePath();
+
+          context.strokeStyle = "green";
+          context.strokeRect(corners[0].x - 2, corners[0].y - 2, 4, 4);
+
+          context.strokeStyle = "blue";
+          context.lineWidth = 1;
+          context.strokeText(marker.id, Math.min(...corners.map((corner) => corner.x)), Math.min(...corners.map((corner) => corner.y)));
+          context.lineWidth = 3;
+        }
+      }
+
+      function detectFromCanvas() {
+        const imageData = context.getImageData(0, 0, width, height);
+        const markers = detector.detect(imageData);
+
+        drawOverlay(markers);
+
+        window.__tsArucoSample.markerIds = markers.map((marker) => marker.id);
+        window.__tsArucoSample.markerCount = markers.length;
+        window.__tsArucoSample.ready = true;
+        status.textContent = markers.length === 0 ? "no markers" : `markers: ${markers.map((marker) => marker.id).join(", ")}`;
+      }
+
+      function tick() {
+        if (video.readyState >= video.HAVE_CURRENT_DATA) {
+          context.drawImage(video, 0, 0, width, height);
+          detectFromCanvas();
+        }
+
+        requestAnimationFrame(tick);
+      }
+
+      async function start() {
+        if (source === "fixture") {
+          video.hidden = true;
+          drawFixtureFrame();
+          context.drawImage(fixture, 0, 0, width, height);
+          detectFromCanvas();
+          return;
+        }
+
+        const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+        video.srcObject = stream;
+        requestAnimationFrame(tick);
+      }
+
+      start().catch((error) => {
+        window.__tsArucoSample.error = error instanceof Error ? error.message : String(error);
+        status.textContent = window.__tsArucoSample.error;
+      });
+    </script>
+  </body>
+</html>
