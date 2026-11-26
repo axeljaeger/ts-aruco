@@ -126,7 +126,7 @@ black - white - white - white - black
 
 ## Demo site
 
-`site/` is a small Vite site that GitHub Pages publishes from `master`
+`site/` is a small Vite site that GitHub Pages publishes on every push to `master`
 (`.github/workflows/pages.yml`):
 
 - a landing page with a QR code that opens `marker.html` on a phone (full screen, rotation lock
@@ -144,7 +144,7 @@ npm run site:dev    # http://localhost:5173/
 npm run site:build  # writes site-dist/
 ```
 
-To publish, set **Settings → Pages → Source** to **GitHub Actions** once.
+Publishing needs **Settings → Pages → Source** set to **GitHub Actions**.
 
 ## Development
 
@@ -155,6 +155,10 @@ npm run test:e2e  # browser tests (Playwright)
 npm run bench     # CPU benchmark, port vs. original
 npm run check     # Biome + type checks
 ```
+
+CI (`.github/workflows/ci.yml`) runs lint and type checks, unit tests on Node 20, 22 and 24, the
+library and site builds and the browser tests on every push and pull request. Dependabot
+(`.github/dependabot.yml`) proposes weekly updates for npm packages and GitHub Actions.
 
 Playwright screenshots are stored per platform. In environments with a preinstalled Chromium,
 set `PW_CHROMIUM_PATH`.
