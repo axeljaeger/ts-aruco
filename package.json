@@ -13,6 +13,10 @@
     "./webgl2": {
       "types": "./dist/webgl2/index.d.ts",
       "default": "./dist/webgl2/index.js"
+    },
+    "./webgpu": {
+      "types": "./dist/webgpu/index.d.ts",
+      "default": "./dist/webgpu/index.js"
     }
   },
   "files": [
@@ -37,6 +41,7 @@
     "@biomejs/biome": "2.5.1",
     "@playwright/test": "^1.61.0",
     "@types/node": "^22.20.7",
+    "@webgpu/types": "^0.1.74",
     "typescript": "5.9.3",
     "vitest": "^3.2.7"
   },

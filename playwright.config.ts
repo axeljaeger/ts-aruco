@@ -20,6 +20,9 @@ export default defineConfig({
     browserName: "chromium",
     deviceScaleFactor: 1,
     viewport: { width: 720, height: 560 },
-    launchOptions: executablePath ? { executablePath } : {},
+    launchOptions: {
+      ...(executablePath ? { executablePath } : {}),
+      args: ["--enable-unsafe-webgpu"],
+    },
   },
 });

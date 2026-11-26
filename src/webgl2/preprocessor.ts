@@ -1,5 +1,8 @@
 import { Image, stackBoxBlurMult, stackBoxBlurShift } from "../cv.js";
+import type { PreprocessResult } from "../preprocess.js";
 import { BLUR_H_SHADER, GREY_SHADER, THRESHOLD_SHADER, VERTEX_SHADER } from "./shaders.js";
+
+export type { PreprocessResult } from "../preprocess.js";
 
 /** An RGBA texture that already lives in the preprocessor's WebGL2 context. */
 export interface TextureSource {
@@ -12,13 +15,6 @@ export interface TextureSource {
 
 /** Anything WebGL can upload (video, canvas, ImageBitmap, ImageData, ...) or a texture. */
 export type FrameSource = TexImageSource | TextureSource;
-
-export interface PreprocessResult {
-  /** Greyscale image, input for marker decoding. */
-  grey: Image;
-  /** Adaptive threshold mask, 255 = dark pixel. */
-  thresholded: Image;
-}
 
 export interface WebGL2PreprocessorOptions {
   /** Same as `DetectorOptions.adaptiveThresholdKernelSize`. Default 2. */

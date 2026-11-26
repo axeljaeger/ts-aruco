@@ -20,6 +20,7 @@ export * as POS from "./posit1.js";
 /** Coplanar POSIT (js-aruco posit1), the default pose estimator. */
 export { type PoseError, Posit } from "./posit1.js";
 export * as POS2 from "./posit2.js";
+export type { PreprocessResult } from "./preprocess.js";
 export * as SVD from "./svd.js";
 
 import { Detector, Marker } from "./aruco.js";

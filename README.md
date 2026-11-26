@@ -71,6 +71,23 @@ compare both paths on synthetic images. `samples/webgl2-detector/` shows both pa
 side with timings and has a synthetic benchmark (`npm run dev:samples`, then open
 `http://127.0.0.1:4173/samples/webgl2-detector/`).
 
+### GPU preprocessing (WebGPU)
+
+The same pipeline as compute shaders. Videos are imported as external textures without a copy,
+results come back through `mapAsync`:
+
+```ts
+import { WebGPUPreprocessor } from "ts-aruco/webgpu";
+
+const gpu = await WebGPUPreprocessor.create(); // or new WebGPUPreprocessor(engineDevice)
+const { grey, thresholded } = await gpu.process(video);
+const markers = detector.detectPreprocessed(grey, thresholded);
+```
+
+Measured on an Apple M4 (Chrome), from submit to data on the CPU: 1.5 ms at 640x480,
+1.6 ms at 1280x720, 2.9 ms at 1920x1080. The CPU path needs 1.9, 6.0 and 13.0 ms for the
+same steps, plus `getImageData`.
+
 ### Compatibility with js-aruco
 
 `AR.Detector`, `AR.Marker`, `POS.Posit` (posit1) and `POS2.Posit` (posit2) keep the original
