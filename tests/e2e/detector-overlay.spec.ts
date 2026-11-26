@@ -90,6 +90,11 @@ for (const testCase of cases) {
       expect(Math.max(...ys)).toBeLessThanOrEqual(bounds.maxY);
     }
 
-    await expect(page.locator("#overlay")).toHaveScreenshot(testCase.screenshot);
+    // Chromium builds anti-alias the outline strokes slightly differently (seen: 10 pixels between
+    // the CI browser and the one the Linux snapshots were taken with). Marker positions are checked
+    // exactly above; the screenshot guards the overlay as a whole.
+    await expect(page.locator("#overlay")).toHaveScreenshot(testCase.screenshot, {
+      maxDiffPixels: 40,
+    });
   });
 }
