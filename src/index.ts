@@ -27,3 +27,12 @@ import { Detector, Marker } from "./aruco.js";
 
 /** Namespace with the names of the original js-aruco `AR` global. */
 export const AR = { Detector, Marker } as const;
+export {
+  type AutoFrameSource,
+  type AutoPreprocessorOptions,
+  CpuPreprocessor,
+  createPreprocessor,
+  DEFAULT_BACKENDS,
+  type FramePreprocessor,
+  type PreprocessorBackend,
+} from "./auto.js";

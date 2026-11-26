@@ -94,6 +94,9 @@ export class WebGPUPreprocessor {
   private uploadTex: GPUTexture | null = null;
   private readonly freeStaging: GPUBuffer[] = [];
   private disposed = false;
+  private externalImportFailed = false;
+  private copyFailed = false;
+  private readCtx: OffscreenCanvasRenderingContext2D | null = null;
 
   constructor(device: GPUDevice, options: WebGPUPreprocessorOptions = {}) {
     this.device = device;
@@ -143,9 +146,20 @@ export class WebGPUPreprocessor {
     // Greyscale input binding: external texture (video), the caller's texture or an upload.
     let greyPipeline: GPUComputePipeline;
     let resource: GPUBindingResource;
-    if (isExternal(source)) {
+    let external: GPUExternalTexture | null = null;
+    if (isExternal(source) && !this.externalImportFailed) {
+      try {
+        external = device.importExternalTexture({ source });
+      } catch (e) {
+        // Some browsers and drivers cannot import every video (e.g. canvas capture streams on
+        // software adapters). Fall back to a copy from then on.
+        console.warn("ts-aruco: importExternalTexture failed, copying video frames instead", e);
+        this.externalImportFailed = true;
+      }
+    }
+    if (external) {
       greyPipeline = this.greyExternal;
-      resource = device.importExternalTexture({ source });
+      resource = external;
     } else if (isTextureSource(source)) {
       greyPipeline = this.greyTexture;
       resource = source.texture.createView();
@@ -244,7 +258,7 @@ export class WebGPUPreprocessor {
   }
 
   private upload(
-    source: Exclude<WebGPUFrameSource, HTMLVideoElement | VideoFrame | GPUTextureSource>,
+    source: Exclude<WebGPUFrameSource, GPUTextureSource>,
     width: number,
     height: number,
   ): GPUTexture {
@@ -261,21 +275,48 @@ export class WebGPUPreprocessor {
           GPUTextureUsage.RENDER_ATTACHMENT,
       });
     }
-    if (typeof ImageData !== "undefined" && source instanceof ImageData) {
-      // Exact bytes, no colour conversion.
-      device.queue.writeTexture(
-        { texture: this.uploadTex },
-        source.data,
-        { bytesPerRow: width * 4 },
-        [width, height],
-      );
-    } else {
-      device.queue.copyExternalImageToTexture({ source }, { texture: this.uploadTex }, [
-        width,
-        height,
-      ]);
+    let pixels = typeof ImageData !== "undefined" && source instanceof ImageData ? source : null;
+    if (!pixels && !this.copyFailed) {
+      try {
+        device.queue.copyExternalImageToTexture(
+          { source: source as GPUCopyExternalImageSource },
+          { texture: this.uploadTex },
+          [width, height],
+        );
+        return this.uploadTex;
+      } catch (e) {
+        // Seen with software adapters (SwiftShader) for video: go through a 2D canvas instead.
+        console.warn(
+          "ts-aruco: copyExternalImageToTexture failed, reading frames via a 2D canvas",
+          e,
+        );
+        this.copyFailed = true;
+      }
     }
+    pixels ??= this.readPixels(source as CanvasImageSource, width, height);
+    // Exact bytes, no colour conversion.
+    device.queue.writeTexture(
+      { texture: this.uploadTex },
+      pixels.data,
+      { bytesPerRow: width * 4 },
+      [width, height],
+    );
     return this.uploadTex;
+  }
+
+  private readPixels(source: CanvasImageSource, width: number, height: number): ImageData {
+    if (!this.readCtx) {
+      const canvas = new OffscreenCanvas(width, height);
+      this.readCtx = canvas.getContext("2d", { willReadFrequently: true });
+      if (!this.readCtx) throw new Error("2D canvas not available");
+    }
+    const canvas = this.readCtx.canvas;
+    if (canvas.width !== width || canvas.height !== height) {
+      canvas.width = width;
+      canvas.height = height;
+    }
+    this.readCtx.drawImage(source, 0, 0, width, height);
+    return this.readCtx.getImageData(0, 0, width, height);
   }
 
   private ensureTarget(width: number, height: number): Target {
