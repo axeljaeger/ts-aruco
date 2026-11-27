@@ -1,6 +1,7 @@
 import { expect, test } from "@playwright/test";
 
 const SITE = "http://127.0.0.1:4174";
+const BUILT = "http://127.0.0.1:4175/ts-aruco";
 
 test.describe("demo site", () => {
   test("landing page shows QR code, marker and demo links", async ({ page }) => {
@@ -54,6 +55,21 @@ test.describe("demo site", () => {
       await page.goto(`${SITE}/demos/${demo}.html?mode=${mode}&renderer=webgl2`);
       await expect(page.locator("#stats")).toContainText("marker 108", { timeout: 20_000 });
       await expect(page.locator("#message")).toBeHidden();
+    });
+  }
+
+  // The build as GitHub Pages serves it: under /ts-aruco/, with assets resolved relative to it.
+  for (const demo of ["three", "babylon"] as const) {
+    test(`built ${demo} demo loads its assets under a sub path`, async ({ page }) => {
+      const failed: string[] = [];
+      page.on("response", (r) => {
+        if (r.status() >= 400) failed.push(`${r.status()} ${r.url()}`);
+      });
+      await page.addInitScript({ path: "tests/e2e/fixtures/fake-camera.js" });
+      await page.goto(`${BUILT}/demos/${demo}.html?mode=cpu&renderer=webgl2`);
+      await expect(page.locator("#stats")).toContainText("marker 108", { timeout: 20_000 });
+      await expect(page.locator("#message")).toBeHidden();
+      expect(failed).toEqual([]);
     });
   }
 });

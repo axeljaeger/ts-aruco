@@ -17,6 +17,7 @@ import {
   setThinInstances,
   startEngine,
 } from "@babylonjs/lite";
+import airplaneUrl from "./assets/airplane.glb?url";
 import { type DemoRenderer, runDemo } from "./common/app.js";
 import type { FlightFrame } from "./common/flight.js";
 import { quatFromAxisAngle } from "./common/math.js";
@@ -56,7 +57,7 @@ class LiteRenderer implements DemoRenderer {
     addToScene(scene, createHemisphericLight([0, 1, 0], 0.9));
     addToScene(scene, createDirectionalLight([1, -2, -1.5], 1.6));
 
-    const asset = await loadGltf(this.engine, `${import.meta.env.BASE_URL}models/airplane.glb`);
+    const asset = await loadGltf(this.engine, airplaneUrl);
     addToScene(scene, asset);
     const roots = asset.entities.filter(
       (e): e is SceneNode => "children" in e && !("parent" in e && e.parent),

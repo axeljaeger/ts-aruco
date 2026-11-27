@@ -22,6 +22,12 @@ export default defineConfig({
       url: "http://127.0.0.1:4174/",
       reuseExistingServer: !process.env.CI,
     },
+    {
+      // The built site under a sub path, like on GitHub Pages (needs `npm run site:build`).
+      command: "npx vite preview --base /ts-aruco/ --host 127.0.0.1 --port 4175 --strictPort",
+      url: "http://127.0.0.1:4175/ts-aruco/",
+      reuseExistingServer: !process.env.CI,
+    },
   ],
   use: {
     baseURL: "http://127.0.0.1:4173",

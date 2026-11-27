@@ -1,4 +1,4 @@
-// Generates site/public/models/airplane.glb, a small low-poly propeller plane.
+// Generates site/src/assets/airplane.glb, a small low-poly propeller plane.
 //
 // The model is built here from boxes and a lathed fuselage so the demo site ships no third-party
 // art. It follows the glTF conventions: metres, +Y up, nose towards +Z. Its total length is about
@@ -9,7 +9,7 @@
 import { mkdirSync, writeFileSync } from "node:fs";
 import { dirname } from "node:path";
 
-const out = process.argv[2] ?? "site/public/models/airplane.glb";
+const out = process.argv[2] ?? "site/src/assets/airplane.glb";
 
 const MATERIALS = {
   body: { color: [0.96, 0.76, 0.22], metallic: 0.1, roughness: 0.55 },
