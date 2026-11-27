@@ -3,8 +3,7 @@ import { resolve } from "node:path";
 import { defaultClientConditions, defineConfig, type Plugin } from "vite";
 
 const root = resolve(__dirname, "site");
-const legacy = resolve(__dirname, "samples/legacy");
-const ORIGINAL_DEMOS = ["debug", "debug-posit", "getusermedia"];
+const original = resolve(__dirname, "reference/js-aruco");
 
 /** Serves the unmodified original js-aruco samples under /original/ and copies them on build. */
 function originalDemos(): Plugin {
@@ -19,8 +18,8 @@ function originalDemos(): Plugin {
         const url = new URL(req.url ?? "/", "http://x");
         const prefix = `${server.config.base}original/`;
         if (!url.pathname.startsWith(prefix)) return next();
-        const file = resolve(legacy, decodeURIComponent(url.pathname.slice(prefix.length)));
-        if (!file.startsWith(legacy) || !existsSync(file) || !statSync(file).isFile())
+        const file = resolve(original, decodeURIComponent(url.pathname.slice(prefix.length)));
+        if (!file.startsWith(original) || !existsSync(file) || !statSync(file).isFile())
           return next();
         const types: Record<string, string> = {
           html: "text/html",
@@ -35,9 +34,7 @@ function originalDemos(): Plugin {
       });
     },
     closeBundle() {
-      for (const demo of ORIGINAL_DEMOS) {
-        cpSync(resolve(legacy, demo), resolve(outDir, "original", demo), { recursive: true });
-      }
+      cpSync(original, resolve(outDir, "original"), { recursive: true });
     },
   };
 }

@@ -5,7 +5,7 @@ import vm from "node:vm";
 /** Loads the original, unmodified js-aruco scripts into an isolated context. */
 // biome-ignore lint/suspicious/noExplicitAny: the original library is untyped JavaScript.
 export function loadReference(): Record<string, any> {
-  const dir = fileURLToPath(new URL("../../reference/js-aruco/", import.meta.url));
+  const dir = fileURLToPath(new URL("../../reference/js-aruco/src/", import.meta.url));
   const context = vm.createContext({ Math });
   for (const file of ["cv.js", "aruco.js", "svd.js", "posit1.js"]) {
     vm.runInContext(readFileSync(dir + file, "utf8"), context, { filename: file });

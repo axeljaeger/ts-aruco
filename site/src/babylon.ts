@@ -1,22 +1,19 @@
 import "@babylonjs/loaders/glTF";
-import {
-  type AbstractEngine,
-  Color3,
-  Color4,
-  DirectionalLight,
-  Engine,
-  HemisphericLight,
-  ImportMeshAsync,
-  Mesh,
-  Quaternion,
-  Scene,
-  StandardMaterial,
-  TransformNode,
-  UniversalCamera,
-  Vector3,
-  VertexData,
-  WebGPUEngine,
-} from "@babylonjs/core";
+import { UniversalCamera } from "@babylonjs/core/Cameras/universalCamera";
+import type { AbstractEngine } from "@babylonjs/core/Engines/abstractEngine";
+import { Engine } from "@babylonjs/core/Engines/engine";
+import { WebGPUEngine } from "@babylonjs/core/Engines/webgpuEngine";
+import { DirectionalLight } from "@babylonjs/core/Lights/directionalLight";
+import { HemisphericLight } from "@babylonjs/core/Lights/hemisphericLight";
+import { ImportMeshAsync } from "@babylonjs/core/Loading/sceneLoader";
+import { StandardMaterial } from "@babylonjs/core/Materials/standardMaterial";
+import { Color3, Color4 } from "@babylonjs/core/Maths/math.color";
+import { Quaternion, Vector3 } from "@babylonjs/core/Maths/math.vector";
+import { Mesh } from "@babylonjs/core/Meshes/mesh";
+import { VertexData } from "@babylonjs/core/Meshes/mesh.vertexData";
+import "@babylonjs/core/Meshes/thinInstanceMesh";
+import { TransformNode } from "@babylonjs/core/Meshes/transformNode";
+import { Scene } from "@babylonjs/core/scene";
 import airplaneUrl from "./assets/airplane.glb?url";
 import { type DemoRenderer, forceWebGL, runDemo } from "./common/app.js";
 import type { FlightFrame } from "./common/flight.js";
