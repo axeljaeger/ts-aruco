@@ -1,0 +1,220 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>ts-aruco WebGL2 detector</title>
+    <style>
+      body {
+        margin: 0;
+        background: #eef1f4;
+        color: #1f2933;
+        font: 14px/1.4 ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+      }
+      main {
+        width: min(100vw - 32px, 960px);
+        margin: 0 auto;
+        padding: 24px 0;
+      }
+      h1 {
+        margin: 0 0 12px;
+        font-size: 20px;
+      }
+      .controls {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+        align-items: center;
+        margin-bottom: 12px;
+      }
+      .stage {
+        position: relative;
+        width: 100%;
+        aspect-ratio: 4 / 3;
+        background: #111;
+        overflow: hidden;
+      }
+      video,
+      canvas {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        object-fit: contain;
+      }
+      pre {
+        font: 13px/1.4 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+        background: white;
+        padding: 12px;
+        border: 1px solid #c8d0d9;
+        white-space: pre-wrap;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>ts-aruco: CPU vs. WebGL2 preprocessing</h1>
+      <div class="controls">
+        <label><input type="radio" name="mode" value="gpu" checked /> WebGL2 (async readback)</label>
+        <label><input type="radio" name="mode" value="gpu-sync" /> WebGL2 (sync readback)</label>
+        <label><input type="radio" name="mode" value="cpu" /> CPU</label>
+        <button id="bench">Run synthetic benchmark</button>
+      </div>
+      <div class="stage">
+        <video id="video" autoplay muted playsinline></video>
+        <canvas id="overlay"></canvas>
+      </div>
+      <pre id="stats">starting camera…</pre>
+      <pre id="bench-result"></pre>
+    </main>
+
+    <script type="module">
+      import { CV, Detector } from "../../dist/index.js";
+      import { WebGL2Preprocessor } from "../../dist/webgl2/index.js";
+
+      const video = document.querySelector("#video");
+      const overlay = document.querySelector("#overlay");
+      const stats = document.querySelector("#stats");
+      const benchResult = document.querySelector("#bench-result");
+      const ctx = overlay.getContext("2d");
+      const scratch = document.createElement("canvas");
+      const scratchCtx = scratch.getContext("2d", { willReadFrequently: true });
+
+      const detector = new Detector();
+      const gpu = WebGL2Preprocessor.create();
+      const gpuOut = { grey: new CV.Image(), thresholded: new CV.Image() };
+      const renderer = (() => {
+        const gl = gpu.gl;
+        const ext = gl.getExtension("WEBGL_debug_renderer_info");
+        return ext ? gl.getParameter(ext.UNMASKED_RENDERER_WEBGL) : gl.getParameter(gl.RENDERER);
+      })();
+
+      const mode = () => document.querySelector("input[name=mode]:checked").value;
+      const avg = new Map();
+      function track(name, ms) {
+        const prev = avg.get(name) ?? ms;
+        avg.set(name, prev * 0.95 + ms * 0.05);
+      }
+
+      function draw(markers) {
+        ctx.clearRect(0, 0, overlay.width, overlay.height);
+        ctx.lineWidth = 3;
+        ctx.font = "20px ui-monospace, monospace";
+        for (const m of markers) {
+          ctx.strokeStyle = "#ff3b30";
+          ctx.beginPath();
+          m.corners.forEach((c, i) => (i ? ctx.lineTo(c.x, c.y) : ctx.moveTo(c.x, c.y)));
+          ctx.closePath();
+          ctx.stroke();
+          ctx.fillStyle = "#34c759";
+          ctx.fillRect(m.corners[0].x - 4, m.corners[0].y - 4, 8, 8);
+          ctx.fillStyle = "#0a84ff";
+          ctx.fillText(String(m.id), m.corners[0].x + 8, m.corners[0].y - 8);
+        }
+      }
+
+      async function frame() {
+        const w = video.videoWidth;
+        const h = video.videoHeight;
+        if (overlay.width !== w || overlay.height !== h) {
+          overlay.width = scratch.width = w;
+          overlay.height = scratch.height = h;
+        }
+
+        const m = mode();
+        let t0 = performance.now();
+        let markers;
+        if (m === "cpu") {
+          scratchCtx.drawImage(video, 0, 0, w, h);
+          const image = scratchCtx.getImageData(0, 0, w, h);
+          track("cpu: getImageData", performance.now() - t0);
+          t0 = performance.now();
+          markers = detector.detect(image);
+          track("cpu: detect (grey + threshold + rest)", performance.now() - t0);
+        } else {
+          const result = m === "gpu" ? await gpu.process(video, gpuOut) : gpu.processSync(video, gpuOut);
+          track(`${m}: preprocess incl. readback`, performance.now() - t0);
+          t0 = performance.now();
+          markers = detector.detectPreprocessed(result.grey, result.thresholded);
+          track(`${m}: detectPreprocessed`, performance.now() - t0);
+        }
+        draw(markers);
+
+        stats.textContent =
+          `${w}x${h}, GPU: ${renderer}\nmarkers: ${markers.map((mk) => mk.id).join(", ") || "none"}\n\n` +
+          [...avg].map(([k, v]) => `${k.padEnd(40)} ${v.toFixed(2)} ms`).join("\n");
+
+        video.requestVideoFrameCallback(frame);
+      }
+
+      async function bench() {
+        benchResult.textContent = "running…";
+        const lines = [];
+        for (const [w, h] of [
+          [640, 480],
+          [1280, 720],
+          [1920, 1080],
+        ]) {
+          const c = document.createElement("canvas");
+          c.width = w;
+          c.height = h;
+          const g = c.getContext("2d", { willReadFrequently: true });
+          g.fillStyle = "#888";
+          g.fillRect(0, 0, w, h);
+          for (let i = 0; i < 2000; ++i) {
+            g.fillStyle = `hsl(${i * 37}, 40%, ${20 + (i % 60)}%)`;
+            g.fillRect((i * 97) % w, (i * 53) % h, 30, 20);
+          }
+          const iterations = 30;
+          const image = g.getImageData(0, 0, w, h);
+          const grey = new CV.Image();
+          const thres = new CV.Image();
+          for (let i = 0; i < 3; ++i) await gpu.process(c, gpuOut);
+
+          let t = performance.now();
+          for (let i = 0; i < iterations; ++i) {
+            CV.grayscale(g.getImageData(0, 0, w, h), grey);
+            CV.adaptiveThreshold(grey, thres, 2, 7);
+          }
+          const cpu = (performance.now() - t) / iterations;
+
+          t = performance.now();
+          for (let i = 0; i < iterations; ++i) {
+            CV.grayscale(image, grey);
+            CV.adaptiveThreshold(grey, thres, 2, 7);
+          }
+          const cpuNoRead = (performance.now() - t) / iterations;
+
+          t = performance.now();
+          for (let i = 0; i < iterations; ++i) gpu.processSync(c, gpuOut);
+          const gpuSync = (performance.now() - t) / iterations;
+
+          t = performance.now();
+          for (let i = 0; i < iterations; ++i) await gpu.process(c, gpuOut);
+          const gpuAsync = (performance.now() - t) / iterations;
+
+          lines.push(
+            `${`${w}x${h}`.padEnd(10)} CPU incl. getImageData ${cpu.toFixed(2).padStart(6)} ms | CPU only ${cpuNoRead
+              .toFixed(2)
+              .padStart(6)} ms | GPU sync ${gpuSync.toFixed(2).padStart(6)} ms | GPU async ${gpuAsync
+              .toFixed(2)
+              .padStart(6)} ms`,
+          );
+          benchResult.textContent = `${renderer}\n${lines.join("\n")}`;
+        }
+      }
+
+      document.querySelector("#bench").addEventListener("click", () => bench().catch((e) => (benchResult.textContent = String(e))));
+
+      try {
+        video.srcObject = await navigator.mediaDevices.getUserMedia({
+          video: { width: { ideal: 1280 }, height: { ideal: 720 } },
+        });
+        await video.play();
+        video.requestVideoFrameCallback(frame);
+      } catch (error) {
+        stats.textContent = `camera not available: ${error.message}. The benchmark still works.`;
+      }
+    </script>
+  </body>
+</html>

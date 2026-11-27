@@ -1,0 +1,125 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>GPU preprocessing fixture</title>
+  </head>
+  <body>
+    <script type="module">
+      import { CV, Detector } from "../../../dist/index.js";
+      import { WebGL2Preprocessor } from "../../../dist/webgl2/index.js";
+      import { WebGPUPreprocessor } from "../../../dist/webgpu/index.js";
+
+      function decode(base64) {
+        const bin = atob(base64);
+        const bytes = new Uint8ClampedArray(bin.length);
+        for (let i = 0; i < bin.length; ++i) bytes[i] = bin.charCodeAt(i);
+        return bytes;
+      }
+
+      function summary(markers) {
+        return markers.map((m) => ({ id: m.id, corners: m.corners.map(({ x, y }) => ({ x, y })) }));
+      }
+
+      let preprocessor;
+
+      /** Runs GPU and CPU preprocessing on the same RGBA pixels and reports the differences. */
+      window.compareWebGL2 = async (width, height, base64, mode) => {
+        preprocessor ??= WebGL2Preprocessor.create();
+        const image = new ImageData(decode(base64), width, height);
+
+        const gpu = mode === "sync" ? preprocessor.processSync(image) : await preprocessor.process(image);
+
+        const cpuGrey = CV.grayscale(image, new CV.Image());
+        // Threshold computed on the CPU from the GPU's grey image: must match exactly.
+        const cpuThresFromGpuGrey = CV.adaptiveThreshold(gpu.grey, new CV.Image(), 2, 7);
+
+        let greyMismatch = 0;
+        let greyMaxDiff = 0;
+        for (let i = 0; i < width * height; ++i) {
+          const d = Math.abs(gpu.grey.data[i] - cpuGrey.data[i]);
+          if (d) greyMismatch++;
+          greyMaxDiff = Math.max(greyMaxDiff, d);
+        }
+        let maskMismatch = 0;
+        for (let i = 0; i < width * height; ++i) {
+          if (gpu.thresholded.data[i] !== cpuThresFromGpuGrey.data[i]) maskMismatch++;
+        }
+
+        const gpuMarkers = new Detector().detectPreprocessed(gpu.grey, gpu.thresholded);
+        const cpuMarkers = new Detector().detect(image);
+
+        return {
+          greyMismatch,
+          greyMaxDiff,
+          maskMismatch,
+          maskValues: [...new Set(gpu.thresholded.data.subarray(0, width * height))].sort(),
+          gpuMarkers: summary(gpuMarkers),
+          cpuMarkers: summary(cpuMarkers),
+        };
+      };
+
+      /** Times GPU preprocessing vs. CPU preprocessing (ms per frame). */
+      window.benchWebGL2 = async (width, height, base64, iterations) => {
+        preprocessor ??= WebGL2Preprocessor.create();
+        const image = new ImageData(decode(base64), width, height);
+        const grey = new CV.Image();
+        const thres = new CV.Image();
+        const out = { grey: new CV.Image(), thresholded: new CV.Image() };
+        for (let i = 0; i < 5; ++i) await preprocessor.process(image, out);
+
+        let t = performance.now();
+        for (let i = 0; i < iterations; ++i) await preprocessor.process(image, out);
+        const gpuAsync = (performance.now() - t) / iterations;
+
+        t = performance.now();
+        for (let i = 0; i < iterations; ++i) preprocessor.processSync(image, out);
+        const gpuSync = (performance.now() - t) / iterations;
+
+        t = performance.now();
+        for (let i = 0; i < iterations; ++i) {
+          CV.grayscale(image, grey);
+          CV.adaptiveThreshold(grey, thres, 2, 7);
+        }
+        const cpu = (performance.now() - t) / iterations;
+        return { gpuAsync, gpuSync, cpu, renderer: preprocessor.gl.getParameter(preprocessor.gl.RENDERER) };
+      };
+
+      let webgpu;
+
+      /** Same comparison as compareWebGL2, for the WebGPU compute path. */
+      window.compareWebGPU = async (width, height, base64, source) => {
+        webgpu ??= await WebGPUPreprocessor.create();
+        const image = new ImageData(decode(base64), width, height);
+        const input = source === "bitmap" ? await createImageBitmap(image) : image;
+        const gpu = await webgpu.process(input);
+
+        const cpuGrey = CV.grayscale(image, new CV.Image());
+        const cpuThresFromGpuGrey = CV.adaptiveThreshold(gpu.grey, new CV.Image(), 2, 7);
+
+        let greyMismatch = 0;
+        let greyMaxDiff = 0;
+        for (let i = 0; i < width * height; ++i) {
+          const d = Math.abs(gpu.grey.data[i] - cpuGrey.data[i]);
+          if (d) greyMismatch++;
+          greyMaxDiff = Math.max(greyMaxDiff, d);
+        }
+        let maskMismatch = 0;
+        for (let i = 0; i < width * height; ++i) {
+          if (gpu.thresholded.data[i] !== cpuThresFromGpuGrey.data[i]) maskMismatch++;
+        }
+
+        return {
+          greyMismatch,
+          greyMaxDiff,
+          maskMismatch,
+          maskValues: [...new Set(gpu.thresholded.data.subarray(0, width * height))].sort(),
+          gpuMarkers: summary(new Detector().detectPreprocessed(gpu.grey, gpu.thresholded)),
+          cpuMarkers: summary(new Detector().detect(image)),
+        };
+      };
+
+      window.gpuFixtureReady = true;
+    </script>
+  </body>
+</html>

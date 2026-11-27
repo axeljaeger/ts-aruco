@@ -1,0 +1,18 @@
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 10
+    groups:
+      # Engines used only by the demo site.
+      engines:
+        patterns: ["three", "@types/three", "@babylonjs/*"]
+      tooling:
+        patterns: ["@biomejs/*", "typescript", "vite", "vitest", "@playwright/test", "@types/*", "@webgpu/types"]
+        exclude-patterns: ["@types/three"]
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly

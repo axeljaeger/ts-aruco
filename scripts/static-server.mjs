@@ -3,7 +3,7 @@ import { stat } from "node:fs/promises";
 import { createServer } from "node:http";
 import { extname, join, normalize, resolve, sep } from "node:path";
 
-const port = 4173;
+const port = Number.parseInt(process.env.PORT ?? "4173", 10);
 const root = resolve(".");
 
 const contentTypes = new Map([
@@ -12,12 +12,15 @@ const contentTypes = new Map([
   [".json", "application/json; charset=utf-8"],
   [".css", "text/css; charset=utf-8"],
   [".png", "image/png"],
+  [".jpg", "image/jpeg"],
 ]);
 
 function resolveRequestPath(url) {
   const pathname = new URL(url, `http://127.0.0.1:${port}`).pathname;
   const requestPath = normalize(decodeURIComponent(pathname)).replace(/^(\.\.[/\\])+/, "");
-  const filePath = resolve(join(root, requestPath === "/" ? "index.html" : requestPath));
+  const filePath = resolve(
+    join(root, requestPath === "/" ? "samples/module-detector/index.html" : requestPath),
+  );
 
   if (filePath !== root && !filePath.startsWith(`${root}${sep}`)) {
     return null;

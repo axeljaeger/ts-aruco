@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>ArUco detector overlay regression fixture</title>
+    <style>
+      body {
+        margin: 0;
+        padding: 32px;
+        background: #f3f4f6;
+        color: #111827;
+        font-family: system-ui, sans-serif;
+      }
+
+      canvas {
+        display: block;
+      }
+
+      #overlay {
+        background: white;
+      }
+
+      #status {
+        margin-top: 12px;
+        font-size: 14px;
+      }
+    </style>
+  </head>
+  <body>
+    <canvas id="overlay" width="640" height="480"></canvas>
+    <canvas id="fixture-frame" width="640" height="480" hidden></canvas>
+    <div id="status">pending</div>
+
+    <script type="module" src="./detector-overlay.js"></script>
+  </body>
+</html>

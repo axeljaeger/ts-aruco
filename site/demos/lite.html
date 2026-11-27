@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Babylon Lite · ts-aruco</title>
+    <link rel="stylesheet" href="../src/common/demo.css" />
+  </head>
+  <body>
+    <div id="stage">
+      <video id="video" playsinline muted></video>
+      <canvas id="canvas"></canvas>
+      <canvas id="overlay"></canvas>
+    </div>
+    <header class="hud">
+      <a href="../">&larr; ts-aruco</a>
+      <h1>Babylon Lite</h1>
+      <select id="mode" aria-label="Preprocessing"></select>
+      <label><input type="checkbox" id="mirror" /> Mirror</label>
+      <label><input type="checkbox" id="outline" /> Outlines</label>
+      <button id="flip" type="button">Switch camera</button>
+    </header>
+    <div id="stats">Starting&hellip;</div>
+    <div id="message" hidden></div>
+    <script type="module" src="../src/lite.ts"></script>
+  </body>
+</html>

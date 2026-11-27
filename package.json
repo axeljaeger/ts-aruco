@@ -9,6 +9,14 @@
     ".": {
       "types": "./dist/index.d.ts",
       "default": "./dist/index.js"
+    },
+    "./webgl2": {
+      "types": "./dist/webgl2/index.d.ts",
+      "default": "./dist/webgl2/index.js"
+    },
+    "./webgpu": {
+      "types": "./dist/webgpu/index.d.ts",
+      "default": "./dist/webgpu/index.js"
     }
   },
   "files": [
@@ -18,16 +26,40 @@
   ],
   "scripts": {
     "build": "tsc -p tsconfig.json",
-    "check": "biome check . && tsc -p tsconfig.json --noEmit",
+    "check": "biome check . && tsc -p tsconfig.json --noEmit && tsc -p tsconfig.test.json --noEmit && tsc -p site/tsconfig.json",
+    "dev:samples": "npm run build && node scripts/static-server.mjs",
     "format": "biome format --write .",
     "lint": "biome lint .",
     "test:e2e": "npm run build && playwright test",
     "test:e2e:update": "npm run build && playwright test --update-snapshots",
-    "typecheck": "tsc -p tsconfig.json --noEmit"
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run",
+    "test:unit": "vitest run",
+    "bench": "tsx tests/bench/bench.ts",
+    "site:dev": "vite",
+    "site:build": "vite build",
+    "site:preview": "vite preview",
+    "site:model": "node scripts/make-airplane.mjs"
   },
   "devDependencies": {
+    "@babylonjs/core": "^9.38.0",
+    "@babylonjs/lite": "^1.42.0",
+    "@babylonjs/loaders": "^9.38.0",
     "@biomejs/biome": "2.5.1",
     "@playwright/test": "^1.61.0",
-    "typescript": "5.9.3"
+    "@types/node": "^22.20.7",
+    "@types/qrcode": "^1.5.6",
+    "@types/three": "^0.187.0",
+    "@webgpu/types": "^0.1.74",
+    "qrcode": "^1.5.4",
+    "three": "^0.187.0",
+    "tsx": "^4.23.15",
+    "typescript": "5.9.3",
+    "vite": "^7.3.8",
+    "vitest": "^5.1.2"
+  },
+  "sideEffects": false,
+  "engines": {
+    "node": ">=18"
   }
 }
