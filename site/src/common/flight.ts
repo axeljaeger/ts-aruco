@@ -3,6 +3,7 @@ import {
   distance,
   lerpVec,
   type Quat,
+  quatAngle,
   quatFromAxisAngle,
   quatMultiply,
   rotateVec,
@@ -27,9 +28,13 @@ const TAIL: Vec3 = [0, 0.02, -0.8];
 
 /** How long a lost marker keeps its last pose before the plane disappears. */
 const HOLD_MS = 500;
-/** Time constants of the pose smoothing. */
-const POSITION_TAU_MS = 45;
-const ROTATION_TAU_MS = 60;
+/**
+ * One Euro filter settings for the pose: a low cutoff (strong smoothing) while the marker is
+ * still, rising with speed so a moving marker is followed with almost no lag.
+ * Speeds are in marker edge lengths per second and radians per second.
+ */
+const POSITION_FILTER = { minCutoffHz: 1.2, beta: 0.8, derivativeCutoffHz: 1.0 };
+const ROTATION_FILTER = { minCutoffHz: 1.2, beta: 1.5, derivativeCutoffHz: 1.0 };
 
 const PUFF_CAPACITY = 400;
 const PUFF_LIFE_MS = 1800;
@@ -78,6 +83,8 @@ export class Flight {
   private targetTime = Number.NEGATIVE_INFINITY;
   private smoothedPosition: Vec3 = [0, 0, -5];
   private smoothedRotation: Quat = [0, 0, 0, 1];
+  private positionSpeed = 0;
+  private rotationSpeed = 0;
   private hasPose = false;
   private lastEmit: Vec3 | null = null;
   private sinceEmit = 0;
@@ -87,11 +94,34 @@ export class Flight {
   /** Feeds the latest tracking result. Follows the first marker seen until it is lost. */
   update(poses: readonly MarkerPose[], now = performance.now()): void {
     const pose = poses.find((p) => p.id === this.markerId) ?? poses[0];
-    if (pose) {
-      this.markerId = pose.id;
-      this.target = pose;
-      this.targetTime = now;
+    if (!pose) {
+      return;
     }
+    const fresh = !this.hasPose || now - this.targetTime >= HOLD_MS;
+    if (fresh) {
+      this.smoothedPosition = [...pose.position];
+      this.smoothedRotation = [...pose.quaternion];
+      this.positionSpeed = 0;
+      this.rotationSpeed = 0;
+    } else {
+      const dt = Math.max(1, now - this.targetTime) / 1000;
+      // One Euro filter: estimate the speed, then smooth less the faster the marker moves.
+      const v = distance(pose.position, this.smoothedPosition) / dt;
+      this.positionSpeed +=
+        (v - this.positionSpeed) * alpha(POSITION_FILTER.derivativeCutoffHz, dt);
+      const pc = POSITION_FILTER.minCutoffHz + POSITION_FILTER.beta * this.positionSpeed;
+      this.smoothedPosition = lerpVec(this.smoothedPosition, pose.position, alpha(pc, dt));
+
+      const w = quatAngle(pose.quaternion, this.smoothedRotation) / dt;
+      this.rotationSpeed +=
+        (w - this.rotationSpeed) * alpha(ROTATION_FILTER.derivativeCutoffHz, dt);
+      const rc = ROTATION_FILTER.minCutoffHz + ROTATION_FILTER.beta * this.rotationSpeed;
+      this.smoothedRotation = slerp(this.smoothedRotation, pose.quaternion, alpha(rc, dt));
+    }
+    this.hasPose = true;
+    this.markerId = pose.id;
+    this.target = pose;
+    this.targetTime = now;
   }
 
   /** Advances the animation by `dtMs` and returns the frame to draw. */
@@ -101,25 +131,6 @@ export class Flight {
     const tracking = this.target !== null && now - this.targetTime < HOLD_MS;
 
     if (tracking && this.target) {
-      const pos = this.target.position;
-      const rot = this.target.quaternion;
-      if (!this.hasPose) {
-        this.smoothedPosition = [...pos];
-        this.smoothedRotation = [...rot];
-        this.hasPose = true;
-      } else {
-        this.smoothedPosition = lerpVec(
-          this.smoothedPosition,
-          pos,
-          1 - Math.exp(-dt / POSITION_TAU_MS),
-        );
-        this.smoothedRotation = slerp(
-          this.smoothedRotation,
-          rot,
-          1 - Math.exp(-dt / ROTATION_TAU_MS),
-        );
-      }
-
       const q = quatMultiply(this.smoothedRotation, MODEL_TO_MARKER);
       const offset = rotateVec(this.smoothedRotation, MODEL_OFFSET);
       f.position = [
@@ -218,4 +229,10 @@ export class Flight {
     this.puffs = alive;
     f.puffCount = n;
   }
+}
+
+/** Smoothing factor of a first order low pass with cutoff `hz` for a step of `dt` seconds. */
+function alpha(hz: number, dt: number): number {
+  const tau = 1 / (2 * Math.PI * hz);
+  return 1 / (1 + tau / dt);
 }
