@@ -29,6 +29,7 @@ interface Elements {
   mode: HTMLSelectElement;
   mirror: HTMLInputElement;
   outline: HTMLInputElement;
+  mask: HTMLInputElement;
   flip: HTMLButtonElement;
 }
 
@@ -48,6 +49,7 @@ function elements(): Elements {
     mode: q("#mode"),
     mirror: q("#mirror"),
     outline: q("#outline"),
+    mask: q("#mask"),
     flip: q("#flip"),
   };
 }
@@ -178,6 +180,9 @@ export async function runDemo(renderer: DemoRenderer): Promise<void> {
         ++detections;
 
         overlay.clearRect(0, 0, el.overlay.width, el.overlay.height);
+        if (el.mask.checked) {
+          Tracker.drawMask(overlay, result.thresholded);
+        }
         if (el.outline.checked) {
           Tracker.drawOutlines(overlay, result.markers, el.overlay.width / result.width);
         }

@@ -36,6 +36,7 @@ class LiteRenderer implements DemoRenderer {
   private propeller: SceneNode | undefined;
   private puffs!: Mesh;
   private visible = true;
+  private puffsVisible = true;
 
   async init(canvas: HTMLCanvasElement): Promise<void> {
     if (!("gpu" in navigator)) {
@@ -112,6 +113,11 @@ class LiteRenderer implements DemoRenderer {
         this.propeller.rotationQuaternion.set(q[0], q[1], q[2], q[3]);
       }
       setThinInstances(this.puffs, f.puffMatrices, f.puffCount);
+      if (f.puffCount > 0 !== this.puffsVisible) {
+        // Same as in the Babylon.js demo: never let the bare mesh render without instances.
+        this.puffsVisible = f.puffCount > 0;
+        setMeshVisible(this.puffs, this.puffsVisible);
+      }
     });
     void startEngine(this.engine);
   }
