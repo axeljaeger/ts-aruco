@@ -41,6 +41,14 @@ e.g. `camera.fov = verticalFieldOfView(canvas.width, canvas.height)` (radians).
 | `minEdgeLength` | 10 | Minimum marker edge length in pixels |
 | `minCornerDistance` | 10 | Candidates closer than this are merged |
 | `warpSize` | 49 | Size of the rectified marker image |
+| `compensateShading` | false | Re-read failed candidates relative to the local black level |
+
+Glare on a phone screen lifts the grey level of one part of the marker, so a global threshold
+reads its black cells as white. For such scenes use a wider threshold window and
+`compensateShading`: when the normal bit reading finds no valid code, each cell is compared with
+the black border cells near it. The demos use `adaptiveThresholdKernelSize: 5` (also the
+preprocessors' `kernelSize`) together with `compensateShading: true`. The defaults keep the
+results identical to the original js-aruco.
 
 `detector.detectPreprocessed(grey, thresholded)` skips greyscale conversion and thresholding,
 for callers that compute those elsewhere (e.g. on the GPU).

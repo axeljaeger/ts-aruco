@@ -3,6 +3,7 @@ export {
   type DetectorOptions,
   defaultDetectorOptions,
   Marker,
+  readBitsCompensated,
 } from "./aruco.js";
 export type { Point } from "./cv.js";
 export * as CV from "./cv.js";
