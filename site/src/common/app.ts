@@ -111,12 +111,21 @@ export async function runDemo(renderer: DemoRenderer): Promise<void> {
     throw e;
   }
 
+  // ?res=1080 asks for 1920x1080: smaller markers are found, the CPU detector takes longer.
+  const camera =
+    params.get("res") === "1080" ? { width: 1920, height: 1080 } : { width: 1280, height: 720 };
   const startCamera = async () => {
     const old = el.video.srcObject as MediaStream | null;
     for (const track of old?.getTracks() ?? []) track.stop();
     const stream = await navigator.mediaDevices.getUserMedia({
       audio: false,
-      video: { facingMode: facing, width: { ideal: 1280 }, height: { ideal: 720 } },
+      video: {
+        facingMode: facing,
+        width: { ideal: camera.width },
+        height: { ideal: camera.height },
+        // A higher frame rate means shorter exposures and less motion blur on fast moves.
+        frameRate: { ideal: 60 },
+      },
     });
     el.video.srcObject = stream;
     await el.video.play();

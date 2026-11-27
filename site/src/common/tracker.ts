@@ -58,7 +58,13 @@ export interface TrackerOptions {
  */
 export class Tracker {
   readonly mode: Mode;
-  private readonly detector = new Detector({ compensateShading: true });
+  // The original minimum contour length (0.2 of the image width) drops markers narrower than
+  // about 70 px at 720p. 0.04 keeps markers down to about 15 px; the code check still rejects
+  // the extra candidates.
+  private readonly detector = new Detector({
+    compensateShading: true,
+    minContourLengthRatio: 0.04,
+  });
   private posit?: Posit;
   private positWidth = 0;
   private readonly previous = new Map<number, Quat>();

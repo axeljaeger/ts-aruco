@@ -71,4 +71,32 @@ describe("shading compensation", () => {
     for (let i = 0; i < 49 * 49; i += 3) white.data[i] = 10;
     expect(readBitsCompensated(white)).toBeNull();
   });
+
+  test("demo settings find a 28 px marker in a 720p frame", () => {
+    const w = 1280;
+    const h = 720;
+    const cell = 4;
+    const data = new Uint8ClampedArray(w * h * 4).fill(235);
+    const bits = markerBits(108);
+    for (let r = -1; r <= 5; ++r) {
+      for (let c = -1; c <= 5; ++c) {
+        const border = r === -1 || r === 5 || c === -1 || c === 5;
+        const v = border || bits[r]?.[c] === 0 ? 20 : 235;
+        for (let y = 0; y < cell; ++y) {
+          for (let x = 0; x < cell; ++x) {
+            const o = ((300 + r * cell + y) * w + 600 + c * cell + x) * 4;
+            data.set([v, v, v, 255], o);
+          }
+        }
+      }
+    }
+    const frame = { width: w, height: h, data };
+    expect(new Detector().detect(frame)).toEqual([]);
+    const demo = new Detector({
+      adaptiveThresholdKernelSize: 5,
+      compensateShading: true,
+      minContourLengthRatio: 0.04,
+    });
+    expect(demo.detect(frame).map((m) => m.id)).toEqual([108]);
+  });
 });
