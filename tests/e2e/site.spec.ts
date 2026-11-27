@@ -24,9 +24,12 @@ test.describe("demo site", () => {
 
   test("original demos are served", async ({ request }) => {
     for (const path of [
-      "getusermedia/getusermedia.html",
-      "debug/debug.html",
-      "debug-posit/debug-posit.html",
+      "samples/getusermedia/getusermedia.html",
+      "samples/debug/debug.html",
+      "samples/debug-posit/debug-posit.html",
+      "samples/libs/polyfill.js",
+      "src/aruco.js",
+      "src/cv.js",
     ]) {
       const res = await request.get(`${SITE}/original/${path}`);
       expect(res.ok(), path).toBe(true);
