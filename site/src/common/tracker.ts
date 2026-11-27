@@ -13,6 +13,9 @@ import { type Quat, quatAngle, quatFromMatrix, type Vec3 } from "./math.js";
 
 export type Mode = PreprocessorBackend;
 
+/** Box blur radius of the adaptive threshold used by the demos (11x11 window). */
+export const TRACKER_KERNEL_SIZE = 5;
+
 export const MODE_LABELS: Record<Mode, string> = {
   cpu: "CPU",
   webgl2: "WebGL2",
@@ -55,7 +58,13 @@ export interface TrackerOptions {
  */
 export class Tracker {
   readonly mode: Mode;
-  private readonly detector = new Detector();
+  // The original minimum contour length (0.2 of the image width) drops markers narrower than
+  // about 70 px at 720p. 0.04 keeps markers down to about 15 px; the code check still rejects
+  // the extra candidates.
+  private readonly detector = new Detector({
+    compensateShading: true,
+    minContourLengthRatio: 0.04,
+  });
   private posit?: Posit;
   private positWidth = 0;
   private readonly previous = new Map<number, Quat>();
@@ -73,6 +82,9 @@ export class Tracker {
       backends: options.modes,
       gl: options.gl,
       device: options.device,
+      // A wider window than the original (2) keeps black cells black under phone screen
+      // reflections.
+      kernelSize: TRACKER_KERNEL_SIZE,
     });
     return new Tracker(pre);
   }

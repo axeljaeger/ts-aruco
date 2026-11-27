@@ -57,6 +57,12 @@ export interface DetectorOptions {
   minCornerDistance?: number;
   /** Size of the rectified marker image used to read the bits. Default 49 (7 per cell). */
   warpSize?: number;
+  /**
+   * When the global Otsu threshold of a candidate gives no valid code, read the bits again
+   * relative to the black level of the nearby border cells. This recovers markers under
+   * reflections or uneven lighting. Off by default so results match the original js-aruco.
+   */
+  compensateShading?: boolean;
 }
 
 export const defaultDetectorOptions: Readonly<Required<DetectorOptions>> = Object.freeze({
@@ -67,6 +73,7 @@ export const defaultDetectorOptions: Readonly<Required<DetectorOptions>> = Objec
   minEdgeLength: 10,
   minCornerDistance: 10,
   warpSize: 49,
+  compensateShading: false,
 });
 
 /** The 4 valid row patterns of the original js-aruco marker code. */
@@ -84,6 +91,8 @@ export class Detector {
   readonly grey: CV.Image = new CV.Image();
   readonly thres: CV.Image = new CV.Image();
   readonly homography: CV.Image = new CV.Image();
+  /** Greyscale rectified candidate, before thresholding. */
+  readonly warped: CV.Image = new CV.Image();
   contours: CV.TracedContour[] = [];
   polys: CV.Contour[] = [];
   candidates: CV.Contour[] = [];
@@ -209,16 +218,32 @@ export class Detector {
     const markers: Marker[] = [];
 
     for (const candidate of candidates) {
-      CV.warp(imageSrc, this.homography, candidate, warpSize);
-      CV.threshold(this.homography, this.homography, CV.otsu(this.homography));
+      CV.warp(imageSrc, this.warped, candidate, warpSize);
+      CV.threshold(this.warped, this.homography, CV.otsu(this.warped));
 
-      const marker = this.getMarker(this.homography, candidate);
+      let marker = this.getMarker(this.homography, candidate);
+      if (!marker && this.options.compensateShading) {
+        const bits = readBitsCompensated(this.warped);
+        marker = bits ? this.markerFromBits(bits, candidate) : null;
+      }
       if (marker) {
         markers.push(marker);
       }
     }
 
     return markers;
+  }
+
+  /** Finds the rotation of `bits` that forms a valid code; null if there is none. */
+  markerFromBits(bits: Bits, candidate: readonly CV.Point[]): Marker | null {
+    let rotated = bits;
+    for (let i = 0; i < 4; ++i) {
+      if (this.hammingDistance(rotated) === 0) {
+        return new Marker(this.mat2id(rotated), this.rotate2(candidate, 4 - i));
+      }
+      rotated = this.rotate(rotated);
+    }
+    return null;
   }
 
   getMarker(imageSrc: CV.Image, candidate: readonly CV.Point[]): Marker | null {
@@ -339,4 +364,102 @@ export class Detector {
 
     return dst;
   }
+}
+
+/** Minimum grey level difference between the black and the white cells of a marker. */
+const MIN_CELL_CONTRAST = 24;
+
+/**
+ * Reads the 5x5 code bits of a rectified greyscale marker (7x7 cells including the black border)
+ * relative to the local black level: each inner cell is compared with the border cells weighted
+ * by inverse squared distance, so a reflection that brightens one side of the marker shifts black
+ * and white cells there alike. Returns null if the border is not uniformly dark or the contrast is
+ * too low.
+ */
+export function readBitsCompensated(warped: CV.Image): Bits | null {
+  const cell = (warped.width / 7) >>> 0;
+  const inset = cell >= 5 ? 1 : 0;
+  const means = new Float64Array(49);
+  for (let i = 0; i < 7; ++i) {
+    for (let j = 0; j < 7; ++j) {
+      let sum = 0;
+      let n = 0;
+      for (let y = i * cell + inset; y < (i + 1) * cell - inset; ++y) {
+        for (let x = j * cell + inset; x < (j + 1) * cell - inset; ++x) {
+          sum += warped.data[y * warped.width + x];
+          ++n;
+        }
+      }
+      means[i * 7 + j] = sum / n;
+    }
+  }
+
+  const border: number[] = [];
+  for (let k = 0; k < 49; ++k) {
+    const i = (k / 7) | 0;
+    const j = k % 7;
+    if (i === 0 || i === 6 || j === 0 || j === 6) {
+      border.push(k);
+    }
+  }
+
+  /** Black level at cell k, interpolated from the border cells other than k. */
+  const blackAt = (k: number): number => {
+    const i = (k / 7) | 0;
+    const j = k % 7;
+    let wsum = 0;
+    let vsum = 0;
+    for (const b of border) {
+      if (b === k) continue;
+      const di = ((b / 7) | 0) - i;
+      const dj = (b % 7) - j;
+      const w = 1 / (di * di + dj * dj);
+      wsum += w;
+      vsum += w * means[b];
+    }
+    return vsum / wsum;
+  };
+
+  const inner: number[] = [];
+  for (let i = 1; i < 6; ++i) {
+    for (let j = 1; j < 6; ++j) {
+      const k = i * 7 + j;
+      inner.push(means[k] - blackAt(k));
+    }
+  }
+
+  // Split the residuals into black and white with the largest between-class variance.
+  const sorted = [...inner].sort((a, b) => a - b);
+  let bestSplit = Number.NaN;
+  let bestScore = -1;
+  let contrast = 0;
+  let below = 0;
+  const total = sorted.reduce((a, b) => a + b, 0);
+  for (let s = 1; s < sorted.length; ++s) {
+    below += sorted[s - 1];
+    const m0 = below / s;
+    const m1 = (total - below) / (sorted.length - s);
+    const score = s * (sorted.length - s) * (m1 - m0) ** 2;
+    if (score > bestScore) {
+      bestScore = score;
+      bestSplit = (sorted[s - 1] + sorted[s]) / 2;
+      contrast = m1 - m0;
+    }
+  }
+  if (!(contrast >= MIN_CELL_CONTRAST)) {
+    return null;
+  }
+
+  // The border must look black against its own neighbours.
+  for (const b of border) {
+    if (means[b] - blackAt(b) > contrast / 2) {
+      return null;
+    }
+  }
+
+  const bits: Bits = [];
+  for (let i = 0; i < 5; ++i) {
+    bits.push(inner.slice(i * 5, i * 5 + 5).map((r) => (r > bestSplit ? 1 : 0)));
+  }
+  return bits;
 }

@@ -6,7 +6,12 @@
     "lib": ["ES2022", "DOM"],
     "types": ["node"],
     "noPropertyAccessFromIndexSignature": false,
-    "isolatedDeclarations": false
+    "isolatedDeclarations": false,
+    "paths": {
+      "ts-aruco": ["./src/index.ts"],
+      "ts-aruco/webgl2": ["./src/webgl2/index.ts"],
+      "ts-aruco/webgpu": ["./src/webgpu/index.ts"]
+    }
   },
   "include": ["src/**/*.ts", "tests/unit/**/*.ts", "tests/support/**/*.ts", "tests/bench/**/*.ts"]
 }

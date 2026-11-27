@@ -111,12 +111,21 @@ export async function runDemo(renderer: DemoRenderer): Promise<void> {
     throw e;
   }
 
+  // ?res=1080 asks for 1920x1080: smaller markers are found, the CPU detector takes longer.
+  const camera =
+    params.get("res") === "1080" ? { width: 1920, height: 1080 } : { width: 1280, height: 720 };
   const startCamera = async () => {
     const old = el.video.srcObject as MediaStream | null;
     for (const track of old?.getTracks() ?? []) track.stop();
     const stream = await navigator.mediaDevices.getUserMedia({
       audio: false,
-      video: { facingMode: facing, width: { ideal: 1280 }, height: { ideal: 720 } },
+      video: {
+        facingMode: facing,
+        width: { ideal: camera.width },
+        height: { ideal: camera.height },
+        // A higher frame rate means shorter exposures and less motion blur on fast moves.
+        frameRate: { ideal: 60 },
+      },
     });
     el.video.srcObject = stream;
     await el.video.play();
@@ -167,16 +176,20 @@ export async function runDemo(renderer: DemoRenderer): Promise<void> {
   let lastStats = performance.now();
   let preMs = 0;
   let detMs = 0;
+  let latencyMs = 0;
+  let latencyExact = false;
 
   const detectLoop = async () => {
     for (;;) {
-      await nextVideoFrame(el.video);
+      const frame = await nextVideoFrame(el.video);
       if (el.video.readyState < 2) continue;
       try {
         const result = await tracker.track(el.video);
         flight.update(result.poses);
         preMs += result.preprocessMs;
         detMs += result.detectMs;
+        latencyMs += performance.now() - frame.captured;
+        latencyExact = frame.exact;
         ++detections;
 
         overlay.clearRect(0, 0, el.overlay.width, el.overlay.height);
@@ -194,10 +207,12 @@ export async function runDemo(renderer: DemoRenderer): Promise<void> {
             `${MODE_LABELS[mode]} preprocessing (${rendererInfo}) · ${result.width}×${result.height} · ` +
             `${((detections * 1000) / (now - lastStats)).toFixed(0)} detections/s · ` +
             `preprocess ${(preMs / n).toFixed(1)} ms · contours+POSIT ${(detMs / n).toFixed(1)} ms · ` +
+            `${latencyExact ? "camera" : "frame"}→pose ${(latencyMs / n).toFixed(0)} ms · ` +
             `${result.markers.length ? `marker ${result.markers.map((m) => m.id).join(", ")}` : "no marker"}`;
           detections = 0;
           preMs = 0;
           detMs = 0;
+          latencyMs = 0;
           lastStats = now;
         }
       } catch (e) {
@@ -212,12 +227,23 @@ export async function runDemo(renderer: DemoRenderer): Promise<void> {
   renderer.start((dt) => flight.step(dt));
 }
 
-function nextVideoFrame(video: HTMLVideoElement): Promise<void> {
+/**
+ * Waits for the next video frame. Resolves with the frame's capture time (performance.now()
+ * clock) when the browser reports one, else with the time the frame was handed to the page.
+ */
+function nextVideoFrame(video: HTMLVideoElement): Promise<{ captured: number; exact: boolean }> {
   return new Promise((resolve) => {
     if ("requestVideoFrameCallback" in video) {
-      video.requestVideoFrameCallback(() => resolve());
+      video.requestVideoFrameCallback((now, meta) => {
+        const captured = meta.captureTime;
+        resolve(
+          captured !== undefined && captured > 0
+            ? { captured, exact: true }
+            : { captured: now, exact: false },
+        );
+      });
     } else {
-      requestAnimationFrame(() => resolve());
+      requestAnimationFrame((now) => resolve({ captured: now, exact: false }));
     }
   });
 }
