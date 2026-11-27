@@ -17,6 +17,7 @@ import {
   VertexData,
   WebGPUEngine,
 } from "@babylonjs/core";
+import airplaneUrl from "./assets/airplane.glb?url";
 import { type DemoRenderer, forceWebGL, runDemo } from "./common/app.js";
 import type { FlightFrame } from "./common/flight.js";
 import { puffGeometry } from "./common/puff-geometry.js";
@@ -72,7 +73,7 @@ class BabylonRenderer implements DemoRenderer {
 
     this.plane = new TransformNode("plane", scene);
     this.plane.rotationQuaternion = Quaternion.Identity();
-    const result = await ImportMeshAsync(`${import.meta.env.BASE_URL}models/airplane.glb`, scene);
+    const result = await ImportMeshAsync(airplaneUrl, scene);
     for (const mesh of result.meshes) {
       if (!mesh.parent) mesh.parent = this.plane;
     }

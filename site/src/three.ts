@@ -1,5 +1,6 @@
 import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
 import * as THREE from "three/webgpu";
+import airplaneUrl from "./assets/airplane.glb?url";
 import { type DemoRenderer, forceWebGL, runDemo } from "./common/app.js";
 import type { FlightFrame } from "./common/flight.js";
 import { puffGeometry } from "./common/puff-geometry.js";
@@ -47,7 +48,7 @@ class ThreeRenderer implements DemoRenderer {
     sun.position.set(-1, 2, 1.5);
     this.scene.add(sun);
 
-    const gltf = await new GLTFLoader().loadAsync(`${import.meta.env.BASE_URL}models/airplane.glb`);
+    const gltf = await new GLTFLoader().loadAsync(airplaneUrl);
     this.plane.add(gltf.scene);
     this.propeller = gltf.scene.getObjectByName("propeller");
     this.plane.visible = false;
