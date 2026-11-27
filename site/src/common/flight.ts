@@ -26,7 +26,7 @@ const MODEL_SCALE = 1.0;
 const TAIL: Vec3 = [0, 0.02, -0.8];
 
 /** How long a lost marker keeps its last pose before the plane disappears. */
-const HOLD_MS = 300;
+const HOLD_MS = 500;
 /** Time constants of the pose smoothing. */
 const POSITION_TAU_MS = 45;
 const ROTATION_TAU_MS = 60;

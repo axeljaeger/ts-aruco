@@ -31,6 +31,8 @@ export interface MarkerPose {
 export interface TrackResult {
   markers: Marker[];
   poses: MarkerPose[];
+  /** Adaptive threshold mask of the frame (255 = dark), for debugging. Reused between frames. */
+  thresholded: CV.Image;
   width: number;
   height: number;
   /** Milliseconds spent in preprocessing (incl. readback) and in the CPU detector. */
@@ -91,7 +93,15 @@ export class Tracker {
 
     const poses = markers.map((m) => this.pose(m, width, height));
     const t2 = performance.now();
-    return { markers, poses, width, height, preprocessMs: t1 - t0, detectMs: t2 - t1 };
+    return {
+      markers,
+      poses,
+      thresholded: pre.thresholded,
+      width,
+      height,
+      preprocessMs: t1 - t0,
+      detectMs: t2 - t1,
+    };
   }
 
   private pose(marker: Marker, width: number, height: number): MarkerPose {
@@ -116,6 +126,33 @@ export class Tracker {
     this.previous.set(marker.id, chosen.quaternion);
     return chosen;
   }
+
+  /** Draws the threshold mask (dark pixels in red) scaled over the whole 2D context. */
+  static drawMask(ctx: CanvasRenderingContext2D, mask: CV.Image): void {
+    const { width, height, data } = mask;
+    if (
+      !Tracker.maskCanvas ||
+      Tracker.maskCanvas.width !== width ||
+      Tracker.maskCanvas.height !== height
+    ) {
+      Tracker.maskCanvas = new OffscreenCanvas(width, height);
+      Tracker.maskImage = new ImageData(width, height);
+    }
+    const out = Tracker.maskImage.data;
+    for (let i = 0; i < width * height; ++i) {
+      const o = i * 4;
+      out[o] = 255;
+      out[o + 1] = 40;
+      out[o + 2] = 40;
+      out[o + 3] = data[i] ? 150 : 0;
+    }
+    const mc = Tracker.maskCanvas.getContext("2d")!;
+    mc.putImageData(Tracker.maskImage, 0, 0);
+    ctx.drawImage(Tracker.maskCanvas, 0, 0, ctx.canvas.width, ctx.canvas.height);
+  }
+
+  private static maskCanvas: OffscreenCanvas | undefined;
+  private static maskImage: ImageData = new ImageData(1, 1);
 
   /** Draws the detected marker outlines into a 2D context, e.g. for debugging. */
   static drawOutlines(ctx: CanvasRenderingContext2D, markers: readonly Marker[], scale = 1): void {

@@ -130,6 +130,9 @@ class BabylonRenderer implements DemoRenderer {
       this.puffBuffer.set(f.puffMatrices.subarray(0, count * 16));
       this.puffs.thinInstanceBufferUpdated("matrix");
       this.puffs.thinInstanceCount = count;
+      // With 0 thin instances Babylon draws the mesh itself once, with an identity matrix: a
+      // puff of radius 1 around the camera, of which a few triangles show up. Hide it instead.
+      this.puffs.setEnabled(count > 0);
 
       this.scene.render();
     });
